@@ -148,6 +148,21 @@ int generating_for_darwin_version ;
 /* Section names.  */
 section * darwin_sections[NUM_DARWIN_SECTIONS];
 
+/* Keep track of which text sections we use so that we can ensure that they
+   are tail-padded so that ld can associate a section with each address in
+   the object file.  */
+static GTY(()) int used_section;
+#define SECT_NORM   0x0001
+#define SECT_COLD   0x0002
+#define SECT_HOT    0x0004
+#define SECT_EXIT   0x0008
+#define SECT_START  0x0010
+#define SECT_WNORM  0x0100
+#define SECT_WCOLD  0x0200
+#define SECT_WHOT   0x0400
+#define SECT_WEXIT  0x0800
+#define SECT_WSTART 0x1000
+
 /* While we transition to using in-tests instead of ifdef'd code.  */
 #ifndef HAVE_lo_sum
 #define HAVE_lo_sum 0
@@ -2913,12 +2928,10 @@ darwin_file_end (void)
       if (flag_objc_abi >= 2)
 	{
 	  flags = 16;
-	  output_section_asm_op
-	    (darwin_sections[objc2_image_info_section]->unnamed.data);
+          switch_to_section (darwin_sections[objc2_image_info_section]);
 	}
       else
-	output_section_asm_op
-	  (darwin_sections[objc_image_info_section]->unnamed.data);
+	switch_to_section (darwin_sections[objc_image_info_section]);
 
       ASM_OUTPUT_ALIGN (asm_out_file, 2);
       fputs ("L_OBJC_ImageInfo:\n", asm_out_file);
@@ -3650,8 +3663,11 @@ darwin_function_section (tree decl, enum node_frequency freq,
 
   /* We always put unlikely executed stuff in the cold section.  */
   if (freq == NODE_FREQUENCY_UNLIKELY_EXECUTED)
-    return (weak) ? darwin_sections[text_cold_coal_section]
-		  : darwin_sections[text_cold_section];
+    {
+      used_section |= (weak) ? SECT_WCOLD : SECT_COLD;
+      return (weak) ? darwin_sections[text_cold_coal_section]
+		    : darwin_sections[text_cold_section];
+    }
 
   /* If we have LTO *and* feedback information, then let LTO handle
      the function ordering, it makes a better job (for normal, hot,
@@ -3661,21 +3677,31 @@ darwin_function_section (tree decl, enum node_frequency freq,
 
   /* Non-cold startup code should go to startup subsection.  */
   if (startup)
-    return (weak) ? darwin_sections[text_startup_coal_section]
-		  : darwin_sections[text_startup_section];
+    {
+      used_section |= (weak) ? SECT_WSTART : SECT_START;
+      return (weak) ? darwin_sections[text_startup_coal_section]
+		    : darwin_sections[text_startup_section];
+    }
 
   /* Similarly for exit.  */
   if (exit)
-    return (weak) ? darwin_sections[text_exit_coal_section]
-		  : darwin_sections[text_exit_section];
+    {
+      used_section |= (weak) ? SECT_WEXIT : SECT_EXIT;
+      return (weak) ? darwin_sections[text_exit_coal_section]
+		    : darwin_sections[text_exit_section];
+    }
 
   /* Place hot code.  */
   if (freq == NODE_FREQUENCY_HOT)
-    return (weak) ? darwin_sections[text_hot_coal_section]
-		  : darwin_sections[text_hot_section];
+    {
+      used_section |= (weak) ? SECT_WHOT : SECT_HOT;
+      return (weak) ? darwin_sections[text_hot_coal_section]
+		    : darwin_sections[text_hot_section];
+    }
 
   /* Otherwise, default to the 'normal' non-reordered sections.  */
 default_function_sections:
+  used_section |= (weak) ? SECT_WNORM : SECT_NORM;
   return (weak) ? darwin_sections[text_coal_section]
 		: text_section;
 }

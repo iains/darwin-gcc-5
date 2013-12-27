@@ -1706,7 +1706,7 @@ assemble_start_function (tree decl, const char *fnname)
 {
   int align;
   char tmp_label[100];
-  bool hot_label_written = false;
+//  bool hot_label_written = false;
 
   if (flag_reorder_blocks_and_partition)
     {
@@ -1744,34 +1744,37 @@ assemble_start_function (tree decl, const char *fnname)
 
   if (flag_reorder_blocks_and_partition)
     {
+      /* There are various partitioning schemes - check for factors that affect
+         the placement of the function code in cold sections.  Now that reorder
+         blocks and partition can be on at the same time as other schemes, we
+         really need to check both possibilities.  */
+
       first_function_block_is_cold = false;
+      if (decl)
+	{
+	  struct cgraph_node *node = cgraph_node::get (decl);
 
-      switch_to_section (unlikely_text_section ());
-      assemble_align (align);
-      ASM_OUTPUT_LABEL (asm_out_file, crtl->subsections.cold_section_label);
+	  if (node)
+	    {
+	      enum node_frequency freq;
+	      freq = node->frequency;
+	      if (freq == NODE_FREQUENCY_UNLIKELY_EXECUTED)
+		first_function_block_is_cold = true;
+	    }
+	}
 
-      /* When the function starts with a cold section, we need to explicitly
-	 align the hot section and write out the hot section label.
-	 But if the current function is a thunk, we do not have a CFG.  */
       if (!cfun->is_thunk
 	  && BB_PARTITION (ENTRY_BLOCK_PTR_FOR_FN (cfun)->next_bb) == BB_COLD_PARTITION)
-	{
-	  switch_to_section (text_section);
-	  assemble_align (align);
-	  ASM_OUTPUT_LABEL (asm_out_file, crtl->subsections.hot_section_label);
-	  hot_label_written = true;
-	  first_function_block_is_cold = true;
-	}
-      in_cold_section_p = first_function_block_is_cold;
+	first_function_block_is_cold = true;
+
     }
 
+  /* first_function_block_is_cold is set by decide_function_section () when
+     flag_reorder_blocks_and_partition is not active.  */
+  in_cold_section_p = first_function_block_is_cold;
 
   /* Switch to the correct text section for the start of the function.  */
-
   switch_to_section (function_section (decl));
-  if (flag_reorder_blocks_and_partition
-      && !hot_label_written)
-    ASM_OUTPUT_LABEL (asm_out_file, crtl->subsections.hot_section_label);
 
   /* Tell assembler to move to target machine's alignment for functions.  */
   align = floor_log2 (align / BITS_PER_UNIT);
@@ -1795,6 +1798,7 @@ assemble_start_function (tree decl, const char *fnname)
 #endif
     }
 
+/* FIXME: This is undocumented and apparently unused.  */
 #ifdef ASM_OUTPUT_FUNCTION_PREFIX
   ASM_OUTPUT_FUNCTION_PREFIX (asm_out_file, fnname);
 #endif
@@ -1827,6 +1831,18 @@ assemble_start_function (tree decl, const char *fnname)
   ASM_OUTPUT_FUNCTION_LABEL (asm_out_file, fnname, current_function_decl);
 #endif /* ASM_DECLARE_FUNCTION_NAME */
 
+  if (flag_reorder_blocks_and_partition)
+    {
+      ASM_OUTPUT_LABEL (asm_out_file, in_cold_section_p
+		        ? crtl->subsections.cold_section_label
+		        : crtl->subsections.hot_section_label);
+      debug_hooks->set_uses_section (in_cold_section_p
+				     ? DEBUG_FUNCTION_USES_COLD_SECTION
+				     : DEBUG_FUNCTION_USES_HOT_SECTION);
+    }
+  else
+    debug_hooks->set_uses_section (DEBUG_FUNCTION_USES_NORMAL_SECTION);
+
   if (lookup_attribute ("no_split_stack", DECL_ATTRIBUTES (decl)))
     saw_no_split_stack = true;
 }
@@ -1837,6 +1853,13 @@ assemble_start_function (tree decl, const char *fnname)
 void
 assemble_end_function (tree decl, const char *fnname ATTRIBUTE_UNUSED)
 {
+  /* Output labels for end of hot/cold text sections (to be used by
+     debug info.)  */
+  if (flag_reorder_blocks_and_partition)
+    ASM_OUTPUT_LABEL (asm_out_file, in_cold_section_p
+		      ? crtl->subsections.cold_section_end_label
+		      : crtl->subsections.hot_section_end_label);
+
 #ifdef ASM_DECLARE_FUNCTION_SIZE
   /* We could have switched section in the middle of the function.  */
   if (flag_reorder_blocks_and_partition)
@@ -1847,22 +1870,6 @@ assemble_end_function (tree decl, const char *fnname ATTRIBUTE_UNUSED)
     {
       output_constant_pool (fnname, decl);
       switch_to_section (function_section (decl)); /* need to switch back */
-    }
-  /* Output labels for end of hot/cold text sections (to be used by
-     debug info.)  */
-  if (flag_reorder_blocks_and_partition)
-    {
-      section *save_text_section;
-
-      save_text_section = in_section;
-      switch_to_section (unlikely_text_section ());
-      ASM_OUTPUT_LABEL (asm_out_file, crtl->subsections.cold_section_end_label);
-      if (first_function_block_is_cold)
-	switch_to_section (text_section);
-      else
-	switch_to_section (function_section (decl));
-      ASM_OUTPUT_LABEL (asm_out_file, crtl->subsections.hot_section_end_label);
-      switch_to_section (save_text_section);
     }
 }
 
@@ -2192,7 +2199,7 @@ assemble_variable (tree decl, int top_level ATTRIBUTE_UNUSED,
       && asan_protect_global (decl))
     {
       asan_protected = true;
-      DECL_ALIGN (decl) = MAX (DECL_ALIGN (decl), 
+      DECL_ALIGN (decl) = MAX (DECL_ALIGN (decl),
                                ASAN_RED_ZONE_SIZE * BITS_PER_UNIT);
     }
 
@@ -2232,7 +2239,7 @@ assemble_variable (tree decl, int top_level ATTRIBUTE_UNUSED,
     assemble_noswitch_variable (decl, name, sect, align);
   else
     {
-      /* The following bit of code ensures that vtable_map 
+      /* The following bit of code ensures that vtable_map
          variables are not only in the comdat section, but that
          each variable has its own unique comdat name.  If this
          code is removed, the variables end up in the same section
@@ -2263,7 +2270,7 @@ assemble_variable (tree decl, int top_level ATTRIBUTE_UNUSED,
           if (TARGET_PECOFF)
           {
             char *name;
-            
+
             if (TREE_CODE (DECL_NAME (decl)) == IDENTIFIER_NODE)
               name = ACONCAT ((sect->named.name, "$",
                                IDENTIFIER_POINTER (DECL_NAME (decl)), NULL));
@@ -7678,7 +7685,7 @@ get_elf_initfini_array_priority_section (int priority,
   if (priority != DEFAULT_INIT_PRIORITY)
     {
       char buf[18];
-      sprintf (buf, "%s.%.5u", 
+      sprintf (buf, "%s.%.5u",
 	       constructor_p ? ".init_array" : ".fini_array",
 	       priority);
       sec = get_section (buf, SECTION_WRITE | SECTION_NOTYPE, NULL_TREE);

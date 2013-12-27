@@ -275,6 +275,9 @@ static GTY(()) bool have_multiple_function_sections = false;
 static GTY(()) bool text_section_used = false;
 static GTY(()) bool cold_text_section_used = false;
 
+/* Which sections the function has used.  */
+static GTY(()) unsigned int function_sections_used = 0;
+
 /* The default cold text section.  */
 static GTY(()) section *cold_text_section;
 
@@ -1207,20 +1210,27 @@ dwarf2out_note_section_used (void)
 {
   section *sec = current_function_section ();
   if (sec == text_section)
-    text_section_used = true;
+    {
+      function_sections_used |= DEBUG_FUNCTION_USES_HOT_SECTION;
+      text_section_used = true;
+    }
   else if (sec == cold_text_section)
-    cold_text_section_used = true;
+    {
+      function_sections_used |= DEBUG_FUNCTION_USES_COLD_SECTION;
+      cold_text_section_used = true;
+    }
+
+ /* ???: what about code using startup, exit, normal etc.? */
+
 }
 
 static void var_location_switch_text_section (void);
 static void set_cur_line_info_table (section *);
 
 void
-dwarf2out_switch_text_section (void)
+dwarf2out_switch_text_section_end_old (void)
 {
-  section *sect;
   dw_fde_ref fde = cfun->fde;
-
   gcc_assert (cfun && fde && fde->dw_fde_second_begin == NULL);
 
   if (!in_cold_section_p)
@@ -1243,10 +1253,12 @@ dwarf2out_switch_text_section (void)
 
   if (dwarf2out_do_cfi_asm ())
     fprintf (asm_out_file, "\t.cfi_endproc\n");
+}
 
-  /* Now do the real section switch.  */
-  sect = current_function_section ();
-  switch_to_section (sect);
+void
+dwarf2out_switch_text_section_start_new (section *sect)
+{
+  dw_fde_ref fde = cfun->fde;
 
   fde->second_in_std_section
     = (sect == text_section
@@ -1260,7 +1272,13 @@ dwarf2out_switch_text_section (void)
   if (cold_text_section != NULL)
     set_cur_line_info_table (sect);
 }
-
+
+void
+dwarf2out_set_uses_section (unsigned int use)
+{
+  function_sections_used |= use;
+}
+
 /* And now, the subset of the debugging information support code necessary
    for emitting location expressions.  */
 
@@ -2510,7 +2528,9 @@ const struct gcc_debug_hooks dwarf2_debug_hooks =
   debug_nothing_rtx_code_label,	/* label */
   debug_nothing_int,		/* handle_pch */
   dwarf2out_var_location,
-  dwarf2out_switch_text_section,
+  dwarf2out_switch_text_section_end_old,
+  dwarf2out_switch_text_section_start_new,
+  dwarf2out_set_uses_section,
   dwarf2out_set_name,
   1,                            /* start_end_main_source_file */
   TYPE_SYMTAB_IS_DIE            /* tree_type_symtab_field */
@@ -21979,7 +21999,7 @@ dwarf2out_begin_function (tree fun)
 
   if (sec != text_section)
     have_multiple_function_sections = true;
-
+#if 0
   if (flag_reorder_blocks_and_partition && !cold_text_section)
     {
       gcc_assert (current_function_decl == fun);
@@ -21988,7 +22008,9 @@ dwarf2out_begin_function (tree fun)
       ASM_OUTPUT_LABEL (asm_out_file, cold_text_section_label);
       switch_to_section (sec);
     }
-
+#endif
+  /* Init the record of which sections this func used.  */
+  function_sections_used = 0;
   dwarf2out_note_section_used ();
   call_site_count = 0;
   tail_call_site_count = 0;

@@ -226,7 +226,7 @@ static int dialect_number;
 /* Nonnull if the insn currently being emitted was a COND_EXEC pattern.  */
 rtx current_insn_predicate;
 
-/* True if printing into -fdump-final-insns= dump.  */   
+/* True if printing into -fdump-final-insns= dump.  */
 bool final_insns_dump_p;
 
 /* True if profile_function should be called, but hasn't been called yet.  */
@@ -832,7 +832,7 @@ compute_alignments (void)
 
 /* Grow the LABEL_ALIGN array after new labels are created.  */
 
-static void 
+static void
 grow_label_align (void)
 {
   int old = max_labelno;
@@ -2221,26 +2221,55 @@ final_scan_insn (rtx_insn *insn, FILE *file, int optimize_p ATTRIBUTE_UNUSED,
 	  break;
 
 	case NOTE_INSN_SWITCH_TEXT_SECTIONS:
-	  in_cold_section_p = !in_cold_section_p;
+	  {
+	    section *sect;
 
-	  if (dwarf2out_do_frame ())
-	    dwarf2out_switch_text_section ();
-	  else if (!DECL_IGNORED_P (current_function_decl))
-	    debug_hooks->switch_text_section ();
+	    ASM_OUTPUT_LABEL (asm_out_file, in_cold_section_p
+			      ? crtl->subsections.cold_section_end_label
+			      : crtl->subsections.hot_section_end_label);
 
-	  switch_to_section (current_function_section ());
-	  targetm.asm_out.function_switched_text_sections (asm_out_file,
+	    in_cold_section_p = !in_cold_section_p;
+	    if (dwarf2out_do_frame ())
+	      dwarf2out_switch_text_section_end_old ();
+	    else if (!DECL_IGNORED_P (current_function_decl))
+	      debug_hooks->switch_text_section_end_old ();
+
+	    sect = current_function_section ();
+	    switch_to_section (sect);
+
+	    /* FIXME: get align right.  */
+	    ASM_OUTPUT_ALIGN (asm_out_file, 4);
+	    targetm.asm_out.function_switched_text_sections (asm_out_file,
 							   current_function_decl,
 							   in_cold_section_p);
-	  /* Emit a label for the split cold section.  Form label name by
-	     suffixing "cold" to the original function's name.  */
-	  if (in_cold_section_p)
-	    {
-	      tree cold_function_name
-		= clone_function_name (current_function_decl, "cold");
-	      ASM_OUTPUT_LABEL (asm_out_file,
+	    /* Emit a label for the split section.  Form label name by
+	       suffixing "cold/hot" to the original function's name.  */
+	    if (in_cold_section_p)
+	      {
+		tree cold_function_name
+		  = clone_function_name (current_function_decl, "cold");
+		ASM_OUTPUT_LABEL (asm_out_file,
 				IDENTIFIER_POINTER (cold_function_name));
-	    }
+		ASM_OUTPUT_LABEL (asm_out_file,
+				  crtl->subsections.cold_section_label);
+	        debug_hooks->set_uses_section (DEBUG_FUNCTION_USES_COLD_SECTION);
+	      }
+	    else
+	      {
+		tree hot_function_name
+		  = clone_function_name (current_function_decl, "hot");
+		ASM_OUTPUT_LABEL (asm_out_file,
+				IDENTIFIER_POINTER (hot_function_name));
+		ASM_OUTPUT_LABEL (asm_out_file,
+				  crtl->subsections.hot_section_label);
+	        debug_hooks->set_uses_section (DEBUG_FUNCTION_USES_HOT_SECTION);
+	      }
+
+	    if (dwarf2out_do_frame ())
+	      dwarf2out_switch_text_section_start_new (sect);
+	    else if (!DECL_IGNORED_P (current_function_decl))
+	      debug_hooks->switch_text_section_start_new (sect);
+	  }
 	  break;
 
 	case NOTE_INSN_BASIC_BLOCK:

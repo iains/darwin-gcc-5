@@ -275,6 +275,9 @@ static GTY(()) const char *lastfile;
    base_input_file.  */
 static GTY(()) int lastfile_is_base;
 
+/* Which sections the function has used.  */
+static GTY(()) unsigned int function_sections_used = 0;
+
 /* Typical USG systems don't have stab.h, and they also have
    no use for DBX-format debugging info.  */
 
@@ -363,9 +366,13 @@ static void dbxout_begin_prologue (unsigned int, const char *);
 static void dbxout_source_file (const char *);
 static void dbxout_function_end (tree);
 static void dbxout_begin_function (tree);
+#ifndef DBX_FUNCTION_FIRST
+static void dbxout_begin_function_a (tree);
+#endif
 static void dbxout_begin_block (unsigned, unsigned);
 static void dbxout_end_block (unsigned, unsigned);
 static void dbxout_function_decl (tree);
+static void dbxout_set_uses_section (unsigned int);
 
 const struct gcc_debug_hooks dbx_debug_hooks =
 {
@@ -385,9 +392,9 @@ const struct gcc_debug_hooks dbx_debug_hooks =
   debug_nothing_int_charstar,	         /* begin_epilogue */
   debug_nothing_int_charstar,	         /* end_epilogue */
 #ifdef DBX_FUNCTION_FIRST
-  dbxout_begin_function,
+  dbxout_begin_function,		 /* begin_function */
 #else
-  debug_nothing_tree,		         /* begin_function */
+  dbxout_begin_function_a,		 /* begin_function */
 #endif
   debug_nothing_int,		         /* end_function */
   debug_nothing_tree,			 /* register_main_translation_unit */
@@ -400,7 +407,9 @@ const struct gcc_debug_hooks dbx_debug_hooks =
   debug_nothing_rtx_code_label,	         /* label */
   dbxout_handle_pch,		         /* handle_pch */
   debug_nothing_rtx_insn,	         /* var_location */
-  debug_nothing_void,                    /* switch_text_section */
+  debug_nothing_void,                    /* switch_text_section_end_old */
+  debug_nothing_sectionstar,             /* switch_text_section_start_new */
+  dbxout_set_uses_section,
   debug_nothing_tree_tree,		 /* set_name */
   0,                                     /* start_end_main_source_file */
   TYPE_SYMTAB_IS_ADDRESS                 /* tree_type_symtab_field */
@@ -425,7 +434,7 @@ const struct gcc_debug_hooks xcoff_debug_hooks =
   debug_nothing_int_charstar,	         /* end_prologue */
   debug_nothing_int_charstar,	         /* begin_epilogue */
   xcoffout_end_epilogue,
-  debug_nothing_tree,		         /* begin_function */
+  debug_nothing_tree,			 /* begin_function */
   xcoffout_end_function,
   debug_nothing_tree,			 /* register_main_translation_unit */
   debug_nothing_tree,		         /* function_decl */
@@ -437,7 +446,9 @@ const struct gcc_debug_hooks xcoff_debug_hooks =
   debug_nothing_rtx_code_label,	         /* label */
   dbxout_handle_pch,		         /* handle_pch */
   debug_nothing_rtx_insn,	         /* var_location */
-  debug_nothing_void,                    /* switch_text_section */
+  debug_nothing_void,                    /* switch_text_section_end_old */
+  debug_nothing_sectionstar,             /* switch_text_section_start_new */
+  debug_nothing_int,
   debug_nothing_tree_tree,	         /* set_name */
   0,                                     /* start_end_main_source_file */
   TYPE_SYMTAB_IS_ADDRESS                 /* tree_type_symtab_field */
@@ -937,12 +948,20 @@ dbxout_function_end (tree decl ATTRIBUTE_UNUSED)
      symbol and an empty string.  */
   if (flag_reorder_blocks_and_partition)
     {
-      dbxout_begin_empty_stabs (N_FUN);
-      dbxout_stab_value_label_diff (crtl->subsections.hot_section_end_label,
-				    crtl->subsections.hot_section_label);
-      dbxout_begin_empty_stabs (N_FUN);
-      dbxout_stab_value_label_diff (crtl->subsections.cold_section_end_label,
-				    crtl->subsections.cold_section_label);
+      if ((function_sections_used & DEBUG_FUNCTION_USES_HOT_SECTION))
+	{
+	  dbxout_begin_empty_stabs (N_FUN);
+	  dbxout_stab_value_label_diff
+		(crtl->subsections.hot_section_end_label,
+		 crtl->subsections.hot_section_label);
+	}
+      if ((function_sections_used & DEBUG_FUNCTION_USES_COLD_SECTION))
+	{
+	  dbxout_begin_empty_stabs (N_FUN);
+	  dbxout_stab_value_label_diff
+		(crtl->subsections.cold_section_end_label,
+		 crtl->subsections.cold_section_label);
+	}
     }
   else
     {
@@ -3795,7 +3814,26 @@ dbxout_begin_function (tree decl)
   dbxout_parms (DECL_ARGUMENTS (decl));
   if (DECL_NAME (DECL_RESULT (decl)) != 0)
     dbxout_symbol (DECL_RESULT (decl), 1);
+
+  /* Ensure we are able to output code ranges for used code sections.  */
+  function_sections_used = 0;
 }
+
+#ifndef DBX_FUNCTION_FIRST
+static void
+dbxout_begin_function_a (tree decl ATTRIBUTE_UNUSED)
+{
+  /* Ensure we are able to output code ranges for used code sections.  */
+  function_sections_used = 0;
+}
+#endif
+
+static void
+dbxout_set_uses_section (unsigned int use)
+{
+  function_sections_used |= use;
+}
+
 #endif /* DBX_DEBUGGING_INFO */
 
 #endif /* DBX_DEBUGGING_INFO || XCOFF_DEBUGGING_INFO */

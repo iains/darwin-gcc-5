@@ -134,7 +134,12 @@ struct gcc_debug_hooks
 
   /* Called from final_scan_insn if there is a switch between hot and cold
      text sections.  */
-  void (* switch_text_section) (void);
+  void (* switch_text_section_end_old) (void);
+  void (* switch_text_section_start_new) (section *);
+
+  /* Called at function start, and during section switches to describe
+     which sections are used by the function.  */
+  void (* set_uses_section) (unsigned int);
 
   /* Called from grokdeclarator.  Replaces the anonymous name with the
      type name.  */
@@ -154,6 +159,7 @@ extern const struct gcc_debug_hooks *debug_hooks;
 /* The do-nothing hooks.  */
 extern void debug_nothing_void (void);
 extern void debug_nothing_charstar (const char *);
+extern void debug_nothing_sectionstar (section *);
 extern void debug_nothing_int_charstar (unsigned int, const char *);
 extern void debug_nothing_int_charstar_int_bool (unsigned int, const char *,
                                                  int, bool);
@@ -186,6 +192,8 @@ extern void dwarf2out_frame_finish (void);
    translation unit.  */
 extern bool dwarf2out_do_frame (void);
 extern bool dwarf2out_do_cfi_asm (void);
+extern void dwarf2out_switch_text_section_end_old (void);
+extern void dwarf2out_switch_text_section_start_new (section *);
 extern void dwarf2out_switch_text_section (void);
 
 const char *remap_debug_filename (const char *);
@@ -195,5 +203,12 @@ void add_debug_prefix_map (const char *);
 
 extern const struct gcc_debug_hooks *
 dump_go_spec_init (const char *, const struct gcc_debug_hooks *);
+
+/* To deal with section switches, this can be extended if debugging needs
+   more finesse in identifying used sections.  */
+
+#define DEBUG_FUNCTION_USES_NORMAL_SECTION 0x0001
+#define DEBUG_FUNCTION_USES_HOT_SECTION 0x0002
+#define DEBUG_FUNCTION_USES_COLD_SECTION 0x0004
 
 #endif /* !GCC_DEBUG_H  */

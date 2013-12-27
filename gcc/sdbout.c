@@ -313,7 +313,9 @@ const struct gcc_debug_hooks sdb_debug_hooks =
   sdbout_label,			         /* label */
   debug_nothing_int,		         /* handle_pch */
   debug_nothing_rtx_insn,	         /* var_location */
-  debug_nothing_void,                    /* switch_text_section */
+  debug_nothing_void,                    /* switch_text_section_end_old */
+  debug_nothing_sectionstar,             /* switch_text_section_start_new */
+  debug_nothing_int,		         /* set debug uses section */
   debug_nothing_tree_tree,		 /* set_name */
   0,                                     /* start_end_main_source_file */
   TYPE_SYMTAB_IS_POINTER                 /* tree_type_symtab_field */
