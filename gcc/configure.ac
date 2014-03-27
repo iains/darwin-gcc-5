@@ -243,12 +243,20 @@ AC_ARG_WITH(gnu-as,
 gas_flag="$with_gnu_as",
 gas_flag=no)
 
+# With CCTOOLS as
+AC_ARG_WITH(cctools-as,
+[AS_HELP_STRING([--with-cctools-as], [arrange to work with cctools as])],
+cctools_flag="$with_cctools_as",
+cctools_flag=no)
+
 AC_ARG_WITH(as,
 [AS_HELP_STRING([--with-as], [arrange to use the specified as (full pathname)])],
 DEFAULT_ASSEMBLER="$with_as")
 if test x"${DEFAULT_ASSEMBLER+set}" = x"set"; then
   if test ! -x "$DEFAULT_ASSEMBLER"; then
     AC_MSG_ERROR([cannot execute: $DEFAULT_ASSEMBLER: check --with-as or env. var. DEFAULT_ASSEMBLER])
+  elif $DEFAULT_ASSEMBLER -v < /dev/null 2>&1 | grep cctools > /dev/null; then
+    cctools_flag=yes
   elif $DEFAULT_ASSEMBLER -v < /dev/null 2>&1 | grep GNU > /dev/null; then
     gas_flag=yes
   fi
@@ -2160,6 +2168,16 @@ AC_ARG_ENABLE(gold,
    ;;
  esac])
 
+AC_MSG_CHECKING(if the assembler is from cctools)
+# Test if the assembler is based on the cctools fork of GAS
+# For canadian Xs the configurer will need to use --with-cctools-as.
+if test x$cctools_flag = xno ; then
+  if $gcc_cv_as -v </dev/null 2>&1 | sed 1q | grep "cctools" > /dev/null; then
+    cctools_flag=yes
+  fi
+fi
+AC_MSG_RESULT($cctools_flag)
+
 # Identify the linker which will work hand-in-glove with the newly
 # built GCC, so that we can examine its features.  This is the linker
 # which will be driven by the driver program.
@@ -2607,6 +2625,7 @@ gcc_GAS_CHECK_FEATURE([.sleb128 and .uleb128], gcc_cv_as_leb128,
 L1:
 	.uleb128 1280
 	.sleb128 -1010
+	.uleb128 0xffffffffffffffff
 L2:],
 [[# GAS versions before 2.11 do not support uleb128,
   # despite appearing to.
@@ -2623,6 +2642,8 @@ L2:],
     then :
     else gcc_cv_as_leb128=yes
     fi
+  elif test x"$cctools_flag" != x"no" ; then
+    gcc_cv_as_leb128=yes
   fi]],
   [AC_DEFINE(HAVE_AS_LEB128, 1,
     [Define if your assembler supports .sleb128 and .uleb128.])])
@@ -4505,6 +4526,8 @@ if test x"$insn" != x; then
   [if test x$gcc_cv_objdump != x \
    && $gcc_cv_objdump -h conftest.o 2> /dev/null \
       | grep debug_line > /dev/null 2>&1; then
+     gcc_cv_as_dwarf2_debug_line=yes
+   elif test x$cctools_flag != xno ; then
      gcc_cv_as_dwarf2_debug_line=yes
    fi])
 
