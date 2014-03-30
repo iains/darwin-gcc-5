@@ -29570,8 +29570,8 @@ machopic_output_stub (FILE *file, const char *symb, const char *stub)
       fprintf (file, "\t.indirect_symbol %s\n", symbol_name);
 
       label++;
-      local_label_0 = XALLOCAVEC (char, sizeof ("\"L00000000000$spb\""));
-      sprintf (local_label_0, "\"L%011d$spb\"", label);
+      local_label_0 = XALLOCAVEC (char, 16);
+      sprintf (local_label_0, "L%d$spb", label);
 
       fprintf (file, "\tmflr r0\n");
       if (TARGET_LINK_STACK)
