@@ -1,7 +1,7 @@
 /* HP-UX libunwind.so doesn't provide _UA_END_OF_STACK */
 /* { dg-do run } */
 /* { dg-options "-fexceptions" } */
-/* { dg-skip-if "" { "ia64-*-hpux11.*" }  { "*" } { "" } } */
+/* { dg-skip-if "" { ia64-*-hpux11.*  i?86-*-darwin1* x86_64-*-darwin1* }  { "*" } { "" } } */
 /* Verify DW_OP_* handling in the unwinder.  */
 
 #include <unwind.h>
