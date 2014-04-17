@@ -2182,6 +2182,18 @@ darwin_emit_except_table_label (FILE *file)
 			       except_table_label_num++);
   ASM_OUTPUT_LABEL (file, section_start_label);
 }
+
+rtx
+darwin_make_eh_symbol_indirect (rtx orig, bool ARG_UNUSED (pubvis))
+{
+  if (DARWIN_PPC == 0 && TARGET_64BIT)
+    return orig;
+
+  return gen_rtx_SYMBOL_REF (Pmode,
+			     machopic_indirection_name (orig,
+							/*stub_p=*/false));
+}
+
 /* Generate a PC-relative reference to a Mach-O non-lazy-symbol.  */
 
 void
