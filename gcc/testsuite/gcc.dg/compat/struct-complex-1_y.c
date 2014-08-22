@@ -1,6 +1,6 @@
-/* { dg-options "-O -Wno-psabi" } */
-
+/* { dg-options "-O -Wno-psabi"   { target { i?86-*-* x86_64-*-* } } } */
 #ifdef __x86_64__
+
 #include <stdlib.h>
 #include "struct-complex-1.h"
 

@@ -1,6 +1,6 @@
-/* { dg-options "-O" } */
-
+/* { dg-options "-O "   { target { i?86-*-* x86_64-*-* } } } */
 #ifdef __x86_64__
+
 /* Test function argument passing.  PR target/39678.  */
 
 extern void struct_complex_2_x (void);
