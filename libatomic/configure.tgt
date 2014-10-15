@@ -23,6 +23,20 @@
 #  see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #  <http://www.gnu.org/licenses/>.
 
+case "${target}" in
+  *-*-darwin*)
+    # Use the same default as GCC.
+    if test -z "$with_arch_32"; then
+      DEFAULT_X86_CPU=i686
+    else
+      DEFAULT_X86_CPU="${with_arch_32}"
+    fi
+    ;;
+  *)
+    DEFAULT_X86_CPU=i486
+    ;;
+esac
+
 # Map the target cpu to an ARCH sub-directory.  At the same time,
 # work out any special compilation flags as necessary.
 
@@ -72,9 +86,10 @@ case "${target_cpu}" in
 	    ;;
 	  *)
 	    if test -z "$with_arch"; then
-	      XCFLAGS="${XCFLAGS} -march=i486 -mtune=${target_cpu}"
-	      XCFLAGS="${XCFLAGS} -fomit-frame-pointer"
+	        XCFLAGS="${XCFLAGS} -march=${DEFAULT_X86_CPU} -mtune=${target_cpu}"
 	    fi
+	    XCFLAGS="${XCFLAGS} -fomit-frame-pointer"
+	    ;;
 	esac
 	ARCH=x86
 	# ??? Detect when -march=i686 is already enabled.
@@ -83,7 +98,9 @@ case "${target_cpu}" in
   x86_64)
 	case " ${CC} ${CFLAGS} " in
 	  *" -m32 "*)
-	    XCFLAGS="${XCFLAGS} -march=i486 -mtune=generic"
+	    if test -z "$with_arch_32"; then
+	        XCFLAGS="${XCFLAGS} -march=${DEFAULT_X86_CPU} -mtune=generic"
+	    fi
 	    XCFLAGS="${XCFLAGS} -fomit-frame-pointer"
 	    ;;
 	  *)
@@ -112,9 +129,15 @@ case "${target}" in
   *-*-linux* | *-*-gnu* | *-*-k*bsd*-gnu \
   | *-*-netbsd* | *-*-freebsd* | *-*-openbsd* \
   | *-*-solaris2* | *-*-sysv4* | *-*-irix6* | *-*-osf* | *-*-hpux11* \
-  | *-*-darwin* | *-*-aix* | *-*-cygwin*)
+  | *-*-aix* | *-*-cygwin*)
 	# POSIX system.  The OS is supported.
 	config_path="${config_path} posix"
+	;;
+
+  *-*-darwin*)
+	# Darwin system.  The OS is supported, and we have some local
+	# changes to improve performance.
+	config_path="${config_path} darwin"
 	;;
 
   *-*-mingw*)

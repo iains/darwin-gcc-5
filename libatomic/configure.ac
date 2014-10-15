@@ -197,7 +197,7 @@ LIBAT_WORDSIZE
 # Check to see if -pthread or -lpthread is needed.  Prefer the former.
 # In case the pthread.h system header is not found, this test will fail.
 case " $config_path " in
- *" posix "*)
+ *" posix "* | *" darwin "*)
   XPCFLAGS=""
   CFLAGS="$CFLAGS -pthread"
   AC_LINK_IFELSE(
