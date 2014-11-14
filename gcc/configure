@@ -877,6 +877,7 @@ with_gnu_ld
 with_ld
 with_demangler_in_ld
 with_gnu_as
+with_cctools_as
 with_as
 enable_largefile
 enable_build_format_warnings
@@ -1689,6 +1690,7 @@ Optional Packages:
   --with-ld               arrange to use the specified ld (full pathname)
   --with-demangler-in-ld  try to use demangler in GNU ld
   --with-gnu-as           arrange to work with GNU as
+  --with-cctools-as       arrange to work with cctools as
   --with-as               arrange to use the specified as (full pathname)
   --with-stabs            arrange to use stabs instead of host debug format
   --with-dwarf2           force the default debug format to be DWARF 2
@@ -3487,6 +3489,16 @@ else
 fi
 
 
+# With CCTOOLS as
+
+# Check whether --with-cctools-as was given.
+if test "${with_cctools_as+set}" = set; then :
+  withval=$with_cctools_as; cctools_flag="$with_cctools_as"
+else
+  cctools_flag=no
+fi
+
+
 
 # Check whether --with-as was given.
 if test "${with_as+set}" = set; then :
@@ -3496,6 +3508,8 @@ fi
 if test x"${DEFAULT_ASSEMBLER+set}" = x"set"; then
   if test ! -x "$DEFAULT_ASSEMBLER"; then
     as_fn_error "cannot execute: $DEFAULT_ASSEMBLER: check --with-as or env. var. DEFAULT_ASSEMBLER" "$LINENO" 5
+  elif $DEFAULT_ASSEMBLER -v < /dev/null 2>&1 | grep cctools > /dev/null; then
+    cctools_flag=yes
   elif $DEFAULT_ASSEMBLER -v < /dev/null 2>&1 | grep GNU > /dev/null; then
     gas_flag=yes
   fi
@@ -18162,7 +18176,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 18165 "configure"
+#line 18179 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -18268,7 +18282,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 18271 "configure"
+#line 18285 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -21678,6 +21692,18 @@ if test "${enable_gold+set}" = set; then :
 fi
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if the assembler is from cctools" >&5
+$as_echo_n "checking if the assembler is from cctools... " >&6; }
+# Test if the assembler is based on the cctools fork of GAS
+# For canadian Xs the configurer will need to use --with-cctools-as.
+if test x$cctools_flag = xno ; then
+  if $gcc_cv_as -v </dev/null 2>&1 | sed 1q | grep "cctools" > /dev/null; then
+    cctools_flag=yes
+  fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cctools_flag" >&5
+$as_echo "$cctools_flag" >&6; }
+
 # Identify the linker which will work hand-in-glove with the newly
 # built GCC, so that we can examine its features.  This is the linker
 # which will be driven by the driver program.
@@ -22752,6 +22778,7 @@ fi
 L1:
 	.uleb128 1280
 	.sleb128 -1010
+	.uleb128 0xffffffffffffffff
 L2:' > conftest.s
     if { ac_try='$gcc_cv_as $gcc_cv_as_flags  -o conftest.o conftest.s >&5'
   { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
@@ -22775,6 +22802,8 @@ L2:' > conftest.s
     then :
     else gcc_cv_as_leb128=yes
     fi
+  elif test x"$cctools_flag" != x"no" ; then
+    gcc_cv_as_leb128=yes
   fi
     else
       echo "configure: failed program was" >&5
@@ -26674,6 +26703,8 @@ fi
 	if test x$gcc_cv_objdump != x \
    && $gcc_cv_objdump -h conftest.o 2> /dev/null \
       | grep debug_line > /dev/null 2>&1; then
+     gcc_cv_as_dwarf2_debug_line=yes
+   elif test x$cctools_flag != xno ; then
      gcc_cv_as_dwarf2_debug_line=yes
    fi
     else
