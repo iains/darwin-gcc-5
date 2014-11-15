@@ -220,10 +220,20 @@ extern int darwin_emit_branch_islands;
 #define ASM_OUTPUT_INTERNAL_LABEL_PREFIX(FILE,PREFIX)	\
   fprintf (FILE, "%s", PREFIX)
 
-/* Override the standard rs6000 definition.  */
-
+/* Override the standard rs6000 definition, use 'cctools' comment.  */
 #undef ASM_COMMENT_START
 #define ASM_COMMENT_START ";"
+
+/* .. but GAS needs more info on the command line.  */
+#if HAVE_GNU_AS
+#undef ASM_SPEC
+#define ASM_SPEC \
+"-arch %(darwin_arch) -mregnames %{static}				\
+ %{!fno-altivec:							\
+   %{!mno-altivec:							\
+     %:version-compare(>= 10.5 mmacosx-version-min= -maltivec)}}	\
+ %{maltivec: -maltivec}"
+#endif
 
 /* This is how to output an assembler line that says to advance
    the location counter to a multiple of 2**LOG bytes using the
