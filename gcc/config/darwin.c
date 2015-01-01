@@ -2075,6 +2075,45 @@ darwin_handle_kext_attribute (tree *node, tree name,
   return NULL_TREE;
 }
 
+/* There is a note in earlier Darwin sources that identifies that the type main
+   variant might not be as expected after build_type_attribute_variant().  This
+   routine ensures that the new main variant is the same as the old.  */
+static tree
+darwin_check_type_attribute_variant (tree *old, tree name, tree args, tree attr)
+{
+  tree t = tree_cons (name, args, attr);
+  t = build_type_attribute_variant (*old, t);
+  if (TYPE_MAIN_VARIANT (*old) != TYPE_MAIN_VARIANT (t))
+    {
+      TYPE_MAIN_VARIANT (t) = TYPE_MAIN_VARIANT (*old);
+      TYPE_NEXT_VARIANT (t) = TYPE_NEXT_VARIANT (*old);
+      TYPE_NEXT_VARIANT (*old) = t;
+    }
+  return t;
+}
+
+tree
+darwin_handle_objc_gc_attribute (tree *node, tree name, tree args,
+				 int flags ATTRIBUTE_UNUSED,
+				 bool *no_add_attrs)
+{
+  tree orig = *node, type;
+
+  /* Propagate GC-ness to the innermost pointee.  */
+  while (POINTER_TYPE_P (orig)
+	 || TREE_CODE (orig) == FUNCTION_TYPE
+	 || TREE_CODE (orig) == METHOD_TYPE
+	 || TREE_CODE (orig) == ARRAY_TYPE)
+    orig = TREE_TYPE (orig);
+
+  type = darwin_check_type_attribute_variant (node, name, args,
+					      TYPE_ATTRIBUTES (orig));
+
+  *node = reconstruct_complex_type (*node, type);
+
+  *no_add_attrs = true;
+  return NULL_TREE;
+}
 /* Handle a "weak_import" attribute; arguments as in
    struct attribute_spec.handler.  */
 
