@@ -2114,6 +2114,30 @@ darwin_handle_objc_gc_attribute (tree *node, tree name, tree args,
   *no_add_attrs = true;
   return NULL_TREE;
 }
+
+tree
+darwin_handle_nsobject_attribute (tree *node, tree name,
+                                  tree args ATTRIBUTE_UNUSED,
+                                  int flags ATTRIBUTE_UNUSED,
+                                  bool *no_add_attrs)
+{
+  enum tree_code tc = TREE_CODE (TREE_TYPE (*node));
+
+  /* The original implementation only allowed pointers to records, however
+     clang allows void *.  */
+  if (! POINTER_TYPE_P (*node) || (tc != RECORD_TYPE && tc != VOID_TYPE))
+    {
+      error ("__attribute ((NSObject)) is for pointer types only");
+      return NULL_TREE;
+    }
+
+  *node = darwin_check_type_attribute_variant (node, name, NULL_TREE,
+					      TYPE_ATTRIBUTES (*node));
+
+  *no_add_attrs = true;
+  return NULL_TREE;
+}
+
 /* Handle a "weak_import" attribute; arguments as in
    struct attribute_spec.handler.  */
 

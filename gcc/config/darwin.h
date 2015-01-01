@@ -718,6 +718,8 @@ extern GTY(()) section * darwin_sections[NUM_DARWIN_SECTIONS];
     darwin_handle_kext_attribute, false },				     \
   { "objc_gc", 1, 1, false, true, false,				     \
     darwin_handle_objc_gc_attribute, false},				     \
+  { "NSObject", 0, 0, false, true, false,				     \
+    darwin_handle_nsobject_attribute, false },				     \
   { "weak_import", 0, 0, true, false, false,				     \
     darwin_handle_weak_import_attribute, false }
 
