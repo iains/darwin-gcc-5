@@ -2256,14 +2256,17 @@ pdp11-*-*)
 powerpc-*-darwin*)
 	extra_options="${extra_options} rs6000/darwin.opt"
 	case ${target} in
-	  *-darwin1[0-9]* | *-darwin[8-9]*)
-	    tmake_file="${tmake_file} rs6000/t-darwin8"
-	    tm_file="${tm_file} rs6000/darwin8.h"
-	    ;;
 	  *-darwin7*)
 	    tm_file="${tm_file} rs6000/darwin7.h"
 	    ;;
-	  *-darwin[0-6]*)
+	  *-darwin8*)
+	    # Set up the -m64 option which appears from darwin8 onward.
+	    tmake_file="${tmake_file} rs6000/t-darwin8"
+	    tm_file="${tm_file} rs6000/darwin8.h"
+	    ;;
+	  *-darwin*)
+	    # Set up the -m64 option which appears from darwin8 onward.
+	    tmake_file="${tmake_file} rs6000/t-darwin8"
 	    ;;
 	esac
 	tmake_file="${tmake_file} t-slibgcc"
@@ -2271,8 +2274,15 @@ powerpc-*-darwin*)
 	;;
 powerpc64-*-darwin*)
 	extra_options="${extra_options} ${cpu_type}/darwin.opt"
+	case ${target} in
+	  *-darwin8*)
+	    tm_file="${tm_file} rs6000/darwin8.h"
+	    ;;
+	  *-darwin*)
+	    ;;
+	esac
 	tmake_file="${tmake_file} ${cpu_type}/t-darwin64 t-slibgcc"
-	tm_file="${tm_file} ${cpu_type}/darwin8.h ${cpu_type}/darwin64.h"
+	tm_file="${tm_file} ${cpu_type}/darwin64.h"
 	extra_headers=altivec.h
 	;;
 powerpc*-*-freebsd*)
