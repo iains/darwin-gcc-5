@@ -1,3 +1,12 @@
+2015-04-22  Release Manager
+
+	* GCC 5.1.0 released.
+
+2015-04-20  Jakub Jelinek  <jakub@redhat.com>
+
+	PR debug/65807
+	* dwarf2out.c (add_AT_wide): Clear attr.dw_attr_val.val_entry.
+
 2015-04-18  Gerald Pfeifer  <gerald@pfeifer.com>
 
 	* doc/plugins.texi: Rewrite first introductory paragraph.
@@ -9,6 +18,7 @@
 	TARGET_MACHO and TARGET_DLLIMPORT_DECL_ATTRIBUTES are false.
 
 2015-04-17  Bill Schmidt  <wschmidt@linux.vnet.ibm.com>
+	    Jakub Jelinek  <jakub@redhat.com>
 
 	PR target/65787
 	* config/rs6000/rs6000.c (rtx_is_swappable_p): Remove previous
