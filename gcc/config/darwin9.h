@@ -26,11 +26,11 @@ along with GCC; see the file COPYING3.  If not see
 /* Since DWARF2 is default, conditions for running dsymutil are different.  */
 #undef DSYMUTIL_SPEC
 #define DSYMUTIL_SPEC \
-   "%{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
+   "%{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:%{!save-temps*: \
     %{v} \
     %{g*:%{!gstabs*:%{!g0: -idsym}}}\
     %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm|.s|.f|.f90|.f95|.f03|.f77|.for|.F|.F90|.F95|.F03: \
-    %{g*:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}"
+    %{g*:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}}"
 
 /* Tell collect2 to run dsymutil for us as necessary.  */
 #define COLLECT_RUN_DSYMUTIL 1
