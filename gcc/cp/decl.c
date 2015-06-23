@@ -3846,6 +3846,8 @@ cxx_init_decl_processing (void)
   global_namespace = build_lang_decl (NAMESPACE_DECL, global_scope_name,
 				      void_type_node);
   DECL_CONTEXT (global_namespace) = build_translation_unit_decl (NULL_TREE);
+  debug_hooks->register_main_translation_unit
+    (DECL_CONTEXT (global_namespace));
   TREE_PUBLIC (global_namespace) = 1;
   begin_scope (sk_namespace, global_namespace);
 
@@ -4825,8 +4827,11 @@ start_decl (const cp_declarator *declarator,
 
   was_public = TREE_PUBLIC (decl);
 
-  /* Enter this declaration into the symbol table.  */
-  decl = maybe_push_decl (decl);
+  /* Enter this declaration into the symbol table.  Don't push the plain
+     VAR_DECL for a variable template.  */
+  if (!template_parm_scope_p ()
+      || TREE_CODE (decl) != VAR_DECL)
+    decl = maybe_push_decl (decl);
 
   if (processing_template_decl)
     decl = push_template_decl (decl);
@@ -8231,13 +8236,6 @@ build_ptrmemfunc_type (tree type)
   if (type == error_mark_node)
     return type;
 
-  /* If a canonical type already exists for this type, use it.  We use
-     this method instead of type_hash_canon, because it only does a
-     simple equality check on the list of field members.  */
-
-  if ((t = TYPE_GET_PTRMEMFUNC_TYPE (type)))
-    return t;
-
   /* Make sure that we always have the unqualified pointer-to-member
      type first.  */
   if (cp_cv_quals quals = cp_type_quals (type))
@@ -8245,6 +8243,13 @@ build_ptrmemfunc_type (tree type)
       tree unqual = build_ptrmemfunc_type (TYPE_MAIN_VARIANT (type));
       return cp_build_qualified_type (unqual, quals);
     }
+
+  /* If a canonical type already exists for this type, use it.  We use
+     this method instead of type_hash_canon, because it only does a
+     simple equality check on the list of field members.  */
+
+  if ((t = TYPE_GET_PTRMEMFUNC_TYPE (type)))
+    return t;
 
   t = make_node (RECORD_TYPE);
 
@@ -10628,7 +10633,7 @@ grokdeclarator (const cp_declarator *declarator,
       }
     else if (decl_context == FIELD)
       {
-	if (!staticp && TREE_CODE (type) != METHOD_TYPE
+	if (!staticp && !friendp && TREE_CODE (type) != METHOD_TYPE
 	    && type_uses_auto (type))
 	  {
 	    error ("non-static data member declared %<auto%>");
