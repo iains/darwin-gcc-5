@@ -1,3 +1,20 @@
+2015-06-24  Mikhail Maltsev  <maltsevm@gmail.com>
+
+	Backport from mainline:
+	2015-06-20  Mikhail Maltsev  <maltsevm@gmail.com>
+
+	PR c++/65882
+	* g++.dg/diagnostic/inhibit-warn-1.C: New test.
+	* g++.dg/diagnostic/inhibit-warn-2.C: New test.
+
+2015-06-23  Richard Biener  <rguenther@suse.de>
+
+	Backport from mainline
+	2015-06-09  Richard Biener  <rguenther@suse.de>
+
+	PR middle-end/66413
+	* gcc.dg/torture/pr66413.c: New testcase.
+
 2015-06-22  Richard Biener  <rguenther@suse.de>
 
 	Backport from mainline

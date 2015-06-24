@@ -1,3 +1,17 @@
+2015-06-23  Richard Biener  <rguenther@suse.de>
+
+	Backport from mainline
+	2015-06-09  Richard Biener  <rguenther@suse.de>
+
+	PR middle-end/66413
+	* tree-inline.c (insert_init_debug_bind): Unshare value.
+
+2015-06-23  Ludovic Courtès  <ludo@gnu.org>
+
+	PR 65711
+	* config/arm/linux-elf.h (LINUX_TARGET_LINK_SPEC): Move
+	'-dynamic-linker' within %{!shared: ...}.
+
 2015-06-22  Vladimir Makarov  <vmakarov@redhat.com>
 
 	PR bootstrap/63740
