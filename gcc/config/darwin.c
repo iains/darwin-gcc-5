@@ -3093,6 +3093,14 @@ darwin_kextabi_p (void) {
 void
 darwin_override_options (void)
 {
+  /* If a compiler is called directly, rather than via the driver, but
+     without a target system version specified, warn the user that a
+     default is in use.  */
+  if (!global_options_set.x_darwin_macosx_version_min)
+    warning_at (UNKNOWN_LOCATION, 0,
+		"%<-mmacosx-version-min%> is not set; using %<%s%>",
+		darwin_macosx_version_min);
+
   /* Keep track of which (major) version we're generating code for.  */
   if (darwin_macosx_version_min)
     {
