@@ -14057,9 +14057,14 @@ cp_parser_template_name (cp_parser* parser,
   /* If DECL is a template, then the name was a template-name.  */
   if (TREE_CODE (decl) == TEMPLATE_DECL)
     {
-      if (TREE_DEPRECATED (decl)
-	  && deprecated_state != DEPRECATED_SUPPRESS)
-	warn_deprecated_use (decl, NULL_TREE);
+      if (deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
+	{
+	  if (TREE_UNAVAILABLE (decl))
+	    error_unavailable_use (decl, NULL_TREE);
+	  else if (TREE_DEPRECATED (decl)
+		   && deprecated_state != DEPRECATED_SUPPRESS)
+	    warn_deprecated_use (decl, NULL_TREE);
+	}
     }
   else
     {
@@ -14295,8 +14300,14 @@ cp_parser_template_argument (cp_parser* parser)
     }
   if (cp_parser_parse_definitely (parser))
     {
-      if (TREE_DEPRECATED (argument))
-	warn_deprecated_use (argument, NULL_TREE);
+      if (deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
+	{
+	  if (TREE_UNAVAILABLE (argument))
+	    error_unavailable_use (argument, NULL_TREE);
+	  else if (TREE_DEPRECATED (argument)
+		   && deprecated_state != DEPRECATED_SUPPRESS)
+	    warn_deprecated_use (argument, NULL_TREE);
+	}
       return argument;
     }
   /* It must be a non-type argument.  There permitted cases are given
@@ -18818,9 +18829,9 @@ cp_parser_parameter_declaration_list (cp_parser* parser, bool *is_error)
 					   /*template_parm_p=*/false,
 					   &parenthesized_p);
 
-      /* We don't know yet if the enclosing context is deprecated, so wait
-	 and warn in grokparms if appropriate.  */
-      deprecated_state = DEPRECATED_SUPPRESS;
+      /* We don't know yet if the enclosing context is unavailable or deprecated,
+         so wait and deal with it in grokparms if appropriate.  */
+      deprecated_state = UNAVAILABLE_DEPRECATED_SUPPRESS;
 
       if (parameter)
 	{

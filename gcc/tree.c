@@ -12194,6 +12194,102 @@ warn_deprecated_use (tree node, tree attr)
     }
 }
 
+/* Error out with an identifier which was marked 'unavailable'. */
+void
+error_unavailable_use (tree node, tree attr)
+{
+  const char *msg;
+  if (node == 0)
+    return;
+
+  if (!attr)
+    {
+      if (DECL_P (node))
+	attr = DECL_ATTRIBUTES (node);
+      else if (TYPE_P (node))
+	{
+	  tree decl = TYPE_STUB_DECL (node);
+	  if (decl)
+	    attr = lookup_attribute ("unavailable",
+				     TYPE_ATTRIBUTES (TREE_TYPE (decl)));
+	}
+    }
+
+  if (attr)
+    attr = lookup_attribute ("unavailable", attr);
+
+  if (attr)
+    msg = TREE_STRING_POINTER (TREE_VALUE (TREE_VALUE (attr)));
+  else
+    msg = NULL;
+
+  if (DECL_P (node))
+    {
+      expanded_location xloc = expand_location (DECL_SOURCE_LOCATION (node));
+      if (msg)
+	error ("%qD is unavailable: %s (declared at %s:%d)", node, msg,
+	       xloc.file, xloc.line);
+      else
+	error ("%qD is unavailable (declared at %s:%d)", node, xloc.file,
+	       xloc.line);
+    }
+  else if (TYPE_P (node))
+    {
+      tree what = NULL_TREE;
+      tree decl = TYPE_STUB_DECL (node);
+
+      if (TYPE_NAME (node))
+	{
+	  if (TREE_CODE (TYPE_NAME (node)) == IDENTIFIER_NODE)
+	    what = TYPE_NAME (node);
+	  else if (TREE_CODE (TYPE_NAME (node)) == TYPE_DECL
+		   && DECL_NAME (TYPE_NAME (node)))
+	    what = DECL_NAME (TYPE_NAME (node));
+	}
+
+      if (decl)
+	{
+	  expanded_location xloc
+	    = expand_location (DECL_SOURCE_LOCATION (decl));
+	  if (what)
+	    {
+	      if (msg)
+		error ("%qE is unavailable: %s (declared at %s:%d)", what,
+		       msg, xloc.file, xloc.line);
+	      else
+		error ("%qE is unavailable (declared at %s:%d)", what,
+			 xloc.file, xloc.line);
+	    }
+	  else
+	    {
+	      if (msg)
+		error ("type is unavailable: %s (declared at %s:%d)", msg,
+			 xloc.file, xloc.line);
+	      else
+		error ("type is unavailable (declared at %s:%d)",
+			 xloc.file, xloc.line);
+	    }
+	}
+      else
+	{
+	  if (what)
+	    {
+	      if (msg)
+		error ("%qE is unavailable: %s",  what, msg);
+	      else
+		error ("%qE is unavailable", what);
+	    }
+	  else
+	    {
+	      if (msg)
+		error ("type is unavailable: %s", msg);
+	      else
+		error ("type is unavailable");
+	    }
+	}
+    }
+}
+
 /* Return true if REF has a COMPONENT_REF with a bit-field field declaration
    somewhere in it.  */
 

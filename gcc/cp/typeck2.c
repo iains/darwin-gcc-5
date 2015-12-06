@@ -1905,10 +1905,15 @@ build_functional_cast (tree exp, tree parms, tsubst_flags_t complain)
     {
       type = TREE_TYPE (exp);
 
-      if (complain & tf_warning
+      if (complain & tf_error
+	  && TREE_UNAVAILABLE (type)
+	  && DECL_ARTIFICIAL (exp))
+	error_unavailable_use (type, NULL_TREE);
+      else if (complain & tf_warning
 	  && TREE_DEPRECATED (type)
 	  && DECL_ARTIFICIAL (exp))
 	warn_deprecated_use (type, NULL_TREE);
+
     }
   else
     type = exp;

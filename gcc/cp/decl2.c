@@ -1512,6 +1512,17 @@ cplus_decl_attributes (tree *decl, tree attributes, int flags)
 	if (*decl == pattern)
 	  TREE_DEPRECATED (tmpl) = true;
       }
+
+  /* Likewise, propagate unavailability out to the template.  */
+  if (TREE_UNAVAILABLE (*decl))
+    if (tree ti = get_template_info (*decl))
+      {
+	tree tmpl = TI_TEMPLATE (ti);
+	tree pattern = (TYPE_P (*decl) ? TREE_TYPE (tmpl)
+			: DECL_TEMPLATE_RESULT (tmpl));
+	if (*decl == pattern)
+	  TREE_UNAVAILABLE (tmpl) = true;
+      }
 }
 
 /* Walks through the namespace- or function-scope anonymous union
@@ -5054,9 +5065,14 @@ mark_used (tree decl, tsubst_flags_t complain)
       return false;
     }
 
-  if (TREE_DEPRECATED (decl) && (complain & tf_warning)
-      && deprecated_state != DEPRECATED_SUPPRESS)
-    warn_deprecated_use (decl, NULL_TREE);
+  if (deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
+    {
+      if (TREE_UNAVAILABLE (decl) && (complain & tf_error))
+	error_unavailable_use (decl, NULL_TREE);
+      else if (TREE_DEPRECATED (decl) && (complain & tf_warning)
+	       && deprecated_state != DEPRECATED_SUPPRESS)
+	warn_deprecated_use (decl, NULL_TREE);
+    }
 
   /* We can only check DECL_ODR_USED on variables or functions with
      DECL_LANG_SPECIFIC set, and these are also the only decls that we

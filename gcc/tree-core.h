@@ -826,7 +826,8 @@ struct GTY(()) tree_base {
       unsigned user_align : 1;
       unsigned nameless_flag : 1;
       unsigned atomic_flag : 1;
-      unsigned spare0 : 3;
+      unsigned unavailable_flag : 1;
+      unsigned spare0 : 2;
 
       unsigned spare1 : 8;
 
@@ -1111,6 +1112,12 @@ struct GTY(()) tree_base {
 
        IDENTIFIER_TRANSPARENT_ALIAS in
            IDENTIFIER_NODE
+
+   unavailable_flag:
+
+       TREE_UNAVAILABLE in
+           all decls
+           all types
 
    visited:
 

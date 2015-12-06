@@ -87,6 +87,8 @@ enum bad_spec_place {
   BSP_FIELD   /* field */
 };
 
+extern void debug_tree(tree);
+
 static tree grokparms (tree parmlist, tree *);
 static const char *redeclaration_error_message (tree, tree);
 
@@ -261,9 +263,12 @@ bool defer_mark_used_calls;
 vec<tree, va_gc> *deferred_mark_used_calls;
 
 /* States indicating how grokdeclarator() should handle declspecs marked
-   with __attribute__((deprecated)).  An object declared as
-   __attribute__((deprecated)) suppresses warnings of uses of other
-   deprecated items.  */
+   with __attribute__((deprecated/unavailable)).
+    An object declared as __attribute__((unavailable)) should suppress
+    warnings and errors from component parts that are attributed as
+    unavailable or deprecated.
+   Similarly, __attribute__((deprecated)) suppresses warnings of uses of
+   other  deprecated items.  */
 enum deprecated_states deprecated_state = DEPRECATED_NORMAL;
 
 
@@ -2047,6 +2052,10 @@ duplicate_decls (tree newdecl, tree olddecl, bool newdecl_is_friend)
       /* Merge deprecatedness.  */
       if (TREE_DEPRECATED (newdecl))
 	TREE_DEPRECATED (olddecl) = 1;
+
+      /* Merge unavailability.  */
+      if (TREE_UNAVAILABLE (newdecl))
+	TREE_UNAVAILABLE (olddecl) = 1;
 
       /* Preserve function specific target and optimization options */
       if (TREE_CODE (newdecl) == FUNCTION_DECL)
@@ -4669,10 +4678,16 @@ start_decl (const cp_declarator *declarator,
 
   *pushed_scope_p = NULL_TREE;
 
-  /* An object declared as __attribute__((deprecated)) suppresses
-     warnings of uses of other deprecated items.  */
-  if (lookup_attribute ("deprecated", attributes))
+  /* An object declared as __attribute__((unavailable)) suppresses
+     any reports of being declared with unavailable or deprecated
+     items.  An object declared as __attribute__((deprecated))
+     suppresses warnings of uses of other deprecated items.  */
+  if (lookup_attribute ("unavailable", attributes))
+    deprecated_state = UNAVAILABLE_DEPRECATED_SUPPRESS;
+  else if (lookup_attribute ("deprecated", attributes))
     deprecated_state = DEPRECATED_SUPPRESS;
+  else
+    deprecated_state = DEPRECATED_NORMAL;
 
   attributes = chainon (attributes, prefix_attributes);
 
@@ -9249,19 +9264,32 @@ grokdeclarator (const cp_declarator *declarator,
       type = NULL_TREE;
       type_was_error_mark_node = true;
     }
-  /* If the entire declaration is itself tagged as deprecated then
-     suppress reports of deprecated items.  */
-  if (type && TREE_DEPRECATED (type)
-      && deprecated_state != DEPRECATED_SUPPRESS)
-    warn_deprecated_use (type, NULL_TREE);
+  /* If the entire declaration is itself tagged as unavailable then
+     suppress reports of unavailable/deprecated items.  However, if
+     the entire declaration is tagged as only deprecated we still
+     report uses of unavailable items.  */
+
+  if (type && deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
+    {
+      if (TREE_UNAVAILABLE (type))
+	error_unavailable_use (type, NULL_TREE);
+      else if (TREE_DEPRECATED (type)
+		&& deprecated_state != DEPRECATED_SUPPRESS)
+	warn_deprecated_use (type, NULL_TREE);
+    }
   if (type && TREE_CODE (type) == TYPE_DECL)
     {
       typedef_decl = type;
       type = TREE_TYPE (typedef_decl);
-      if (TREE_DEPRECATED (type)
-	  && DECL_ARTIFICIAL (typedef_decl)
-	  && deprecated_state != DEPRECATED_SUPPRESS)
-	warn_deprecated_use (type, NULL_TREE);
+      if (DECL_ARTIFICIAL (typedef_decl)
+	  && deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
+        {
+	  if (TREE_UNAVAILABLE (type))
+	    error_unavailable_use (type, NULL_TREE);
+	  else if (TREE_DEPRECATED (type)
+		&& deprecated_state != DEPRECATED_SUPPRESS)
+	    warn_deprecated_use (type, NULL_TREE);
+	}
     }
   /* No type at all: default to `int', and set DEFAULTED_INT
      because it was not a user-defined typedef.  */
@@ -11269,9 +11297,8 @@ type_is_deprecated (tree type)
   enum tree_code code;
   if (TREE_DEPRECATED (type))
     return type;
-  if (TYPE_NAME (type)
-      && TREE_DEPRECATED (TYPE_NAME (type)))
-    return type;
+  if (TYPE_NAME (type))
+    return TREE_DEPRECATED (TYPE_NAME (type)) ? type : NULL_TREE;
 
   /* Do warn about using typedefs to a deprecated class.  */
   if (OVERLOAD_TYPE_P (type) && type != TYPE_MAIN_VARIANT (type))
@@ -11291,6 +11318,34 @@ type_is_deprecated (tree type)
   return NULL_TREE;
 }
 
+/* Returns an unavailable type used within TYPE, or NULL_TREE if none.  */
+
+static tree
+type_is_unavailable (tree type)
+{
+  enum tree_code code;
+  if (TREE_UNAVAILABLE (type))
+    return type;
+  if (TYPE_NAME (type))
+    return TREE_UNAVAILABLE (TYPE_NAME (type)) ? type : NULL_TREE;
+
+  /* Do error using typedefs to an unavailable class.  */
+  if (OVERLOAD_TYPE_P (type) && type != TYPE_MAIN_VARIANT (type))
+    return type_is_unavailable (TYPE_MAIN_VARIANT (type));
+
+  code = TREE_CODE (type);
+
+  if (code == POINTER_TYPE || code == REFERENCE_TYPE
+      || code == OFFSET_TYPE || code == FUNCTION_TYPE
+      || code == METHOD_TYPE || code == ARRAY_TYPE)
+    return type_is_unavailable (TREE_TYPE (type));
+
+  if (TYPE_PTRMEMFUNC_P (type))
+    return type_is_unavailable
+      (TREE_TYPE (TREE_TYPE (TYPE_PTRMEMFUNC_FN_TYPE (type))));
+
+  return NULL_TREE;
+}
 /* Decode the list of parameter types for a function type.
    Given the list of things declared inside the parens,
    return a list of types.
@@ -11366,11 +11421,17 @@ grokparms (tree parmlist, tree *parms)
 
       if (type != error_mark_node)
 	{
-	  if (deprecated_state != DEPRECATED_SUPPRESS)
+	  if (deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
 	    {
-	      tree deptype = type_is_deprecated (type);
-	      if (deptype)
-		warn_deprecated_use (deptype, NULL_TREE);
+	      tree badtype = type_is_unavailable (type);
+	      if (badtype)
+		error_unavailable_use (badtype, NULL_TREE);
+	      else if (deprecated_state != DEPRECATED_SUPPRESS)
+		{
+		  tree deptype = type_is_deprecated (type);
+		  if (deptype)
+		    warn_deprecated_use (deptype, NULL_TREE);
+		}
 	    }
 
 	  /* Top-level qualifiers on the parameters are

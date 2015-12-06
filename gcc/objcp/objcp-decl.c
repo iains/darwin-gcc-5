@@ -71,6 +71,10 @@ objcp_finish_struct (location_t loc ATTRIBUTE_UNUSED,
   {
     next_field = TREE_CHAIN (field);      /* insert one field at a time;  */
     TREE_CHAIN (field) = NULL_TREE;       /* otherwise, grokfield croaks. */
+// ids    if (TREE_UNAVAILABLE (field))
+// ids      error_unavailable_use (field, NULL_TREE);
+// ids    else if (TREE_DEPRECATED (field))
+// ids      warn_deprecated_use (field, NULL_TREE);
     finish_member_declaration (field);
   }
   t = finish_struct (t, attributes);

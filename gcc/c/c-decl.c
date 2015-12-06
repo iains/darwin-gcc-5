@@ -91,13 +91,16 @@ enum decl_context
   TYPENAME};			/* Typename (inside cast or sizeof)  */
 
 /* States indicating how grokdeclarator() should handle declspecs marked
-   with __attribute__((deprecated)).  An object declared as
-   __attribute__((deprecated)) suppresses warnings of uses of other
-   deprecated items.  */
+   with __attribute__((deprecated)) or __attribute__((unavailable)).
+   An object declared as __attribute__((unavailable)) should suppress
+   any reports of being declared  with unavailable or deprecated items.
+   An object declared as __attribute__((deprecated)) should suppress
+   warnings of uses of other deprecated items.  */
 
 enum deprecated_states {
   DEPRECATED_NORMAL,
-  DEPRECATED_SUPPRESS
+  DEPRECATED_SUPPRESS,
+  UNAVAILABLE_DEPRECATED_SUPPRESS
 };
 
 
@@ -2419,6 +2422,10 @@ merge_decls (tree newdecl, tree olddecl, tree newtype, tree oldtype)
   if (TREE_DEPRECATED (newdecl))
     TREE_DEPRECATED (olddecl) = 1;
 
+  /* Merge unavailability.  */
+  if (TREE_UNAVAILABLE (newdecl))
+    TREE_UNAVAILABLE (olddecl) = 1;
+
   /* If a decl is in a system header and the other isn't, keep the one on the
      system header. Otherwise, keep source location of definition rather than
      declaration and of prototype rather than non-prototype unless that
@@ -4265,6 +4272,7 @@ quals_from_declspecs (const struct c_declspecs *specs)
 	      && !specs->typedef_p
 	      && !specs->explicit_signed_p
 	      && !specs->deprecated_p
+	      && !specs->unavailable_p
 	      && !specs->long_p
 	      && !specs->long_long_p
 	      && !specs->short_p
@@ -4450,9 +4458,14 @@ start_decl (struct c_declarator *declarator, struct c_declspecs *declspecs,
   tree expr = NULL_TREE;
   enum deprecated_states deprecated_state = DEPRECATED_NORMAL;
 
-  /* An object declared as __attribute__((deprecated)) suppresses
+  /* An object declared as __attribute__((unavailable)) suppresses
+     warnings and errors from __attribute__((deprecated/unavailable))
+     components.
+     An object declared as __attribute__((deprecated)) suppresses
      warnings of uses of other deprecated items.  */
-  if (lookup_attribute ("deprecated", attributes))
+  if (lookup_attribute ("unavailable", attributes))
+    deprecated_state = UNAVAILABLE_DEPRECATED_SUPPRESS;
+  else if (lookup_attribute ("deprecated", attributes))
     deprecated_state = DEPRECATED_SUPPRESS;
 
   decl = grokdeclarator (declarator, declspecs,
@@ -5330,7 +5343,7 @@ warn_defaults_to (location_t location, int opt, const char *gmsgid, ...)
      set to indicate whether operands in *EXPR can be used in constant
      expressions.
    DEPRECATED_STATE is a deprecated_states value indicating whether
-   deprecation warnings should be suppressed.
+   deprecation/unavailability warnings should be suppressed.
 
    In the TYPENAME case, DECLARATOR is really an absolute declarator.
    It may also be so in the PARM case, for a prototype where the
@@ -5447,8 +5460,14 @@ grokdeclarator (const struct c_declarator *declarator,
   if (decl_context == NORMAL && !funcdef_flag && current_scope->parm_flag)
     decl_context = PARM;
 
-  if (declspecs->deprecated_p && deprecated_state != DEPRECATED_SUPPRESS)
-    warn_deprecated_use (declspecs->type, declspecs->decl_attr);
+  if (deprecated_state != UNAVAILABLE_DEPRECATED_SUPPRESS)
+    {
+      if (declspecs->unavailable_p)
+	error_unavailable_use (declspecs->type, declspecs->decl_attr);
+      else if (declspecs->deprecated_p
+		&& deprecated_state != DEPRECATED_SUPPRESS)
+	warn_deprecated_use (declspecs->type, declspecs->decl_attr);
+    }
 
   if ((decl_context == NORMAL || decl_context == FIELD)
       && current_scope == file_scope
@@ -9384,6 +9403,7 @@ build_null_declspecs (void)
   ret->typedef_p = false;
   ret->explicit_signed_p = false;
   ret->deprecated_p = false;
+  ret->unavailable_p = false;
   ret->default_int_p = false;
   ret->long_p = false;
   ret->long_long_p = false;
@@ -9484,6 +9504,8 @@ declspecs_add_type (location_t loc, struct c_declspecs *specs,
   specs->typespec_kind = spec.kind;
   if (TREE_DEPRECATED (type))
     specs->deprecated_p = true;
+  if (TREE_UNAVAILABLE (type))
+    specs->unavailable_p = true;
 
   /* Handle type specifier keywords.  */
   if (TREE_CODE (type) == IDENTIFIER_NODE

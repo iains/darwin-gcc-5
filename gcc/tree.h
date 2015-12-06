@@ -891,6 +891,11 @@ extern void omp_clause_range_check_failed (const_tree, const char *, int,
 #define TREE_DEPRECATED(NODE) \
   ((NODE)->base.deprecated_flag)
 
+/* Nonzero in a _DECL if the use of the name is defined as an
+   unavailable feature by __attribute__((unavailable)).  */
+#define TREE_UNAVAILABLE(NODE) \
+  ((NODE)->base.u.bits.unavailable_flag)
+
 /* Nonzero in an IDENTIFIER_NODE if the name is a local alias, whose
    uses are to be substituted for uses of the TREE_CHAINed identifier.  */
 #define IDENTIFIER_TRANSPARENT_ALIAS(NODE) \
@@ -4379,6 +4384,7 @@ extern const_tree strip_invariant_refs (const_tree);
 extern tree lhd_gcc_personality (void);
 extern void assign_assembler_name_if_neeeded (tree);
 extern void warn_deprecated_use (tree, tree);
+extern void error_unavailable_use (tree, tree);
 extern void cache_integer_cst (tree);
 
 /* Return the memory model from a host integer.  */

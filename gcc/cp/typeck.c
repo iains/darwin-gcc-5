@@ -2299,7 +2299,9 @@ build_class_member_access_expr (tree object, tree member,
     {
       member_scope = DECL_CLASS_CONTEXT (member);
       mark_used (member);
-      if (TREE_DEPRECATED (member))
+      if (TREE_UNAVAILABLE (member))
+	error_unavailable_use (member, NULL_TREE);
+      else if (TREE_DEPRECATED (member))
 	warn_deprecated_use (member, NULL_TREE);
     }
   else
@@ -2804,7 +2806,9 @@ finish_class_member_access_expr (tree object, tree name, bool template_p,
 	}
     }
 
-  if (TREE_DEPRECATED (member))
+  if (TREE_UNAVAILABLE (member))
+    error_unavailable_use (member, NULL_TREE);
+  else if (TREE_DEPRECATED (member))
     warn_deprecated_use (member, NULL_TREE);
 
   if (template_p)

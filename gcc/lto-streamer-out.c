@@ -991,6 +991,7 @@ hash_tree (struct streamer_tree_cache_d *cache, hash_map<tree, hashval_t> *map, 
   hstate.add_flag (TREE_STATIC (t));
   hstate.add_flag (TREE_PROTECTED (t));
   hstate.add_flag (TREE_DEPRECATED (t));
+  hstate.add_flag (TREE_UNAVAILABLE (t));
   if (code != TREE_BINFO)
     hstate.add_flag (TREE_PRIVATE (t));
   if (TYPE_P (t))
