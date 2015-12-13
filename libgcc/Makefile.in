@@ -71,6 +71,8 @@ INSTALL_PARTS = $(EXTRA_PARTS)
 
 objext = .o
 
+SHLIB_BASE_NAME = libgcc_s
+
 AR = @AR@
 AR_FLAGS = rc
 
@@ -131,7 +133,7 @@ clean:
 	-rm -f *.dep
 	-rm -f *.a
 	-rm -f libunwind$(SHLIB_EXT)
-	-rm -f libgcc_s*
+	-rm -f $(SHLIB_BASE_NAME)*
 	@$(MULTICLEAN) multi-clean DO=clean
 distclean: clean
 	@$(MULTICLEAN) multi-clean DO=distclean
@@ -909,11 +911,11 @@ all: libgcc.a libgcov.a
 
 ifneq ($(LIBUNWIND),)
 all: libunwind.a
-libgcc_s$(SHLIB_EXT): libunwind$(SHLIB_EXT)
+$(SHLIB_BASE_NAME)$(SHLIB_EXT): libunwind$(SHLIB_EXT)
 endif
 
 ifeq ($(enable_shared),yes)
-all: libgcc_eh.a libgcc_s$(SHLIB_EXT)
+all: libgcc_eh.a $(SHLIB_BASE_NAME)$(SHLIB_EXT)
 ifneq ($(LIBUNWIND),)
 all: libunwind$(SHLIB_EXT)
 endif
@@ -935,7 +937,7 @@ libgcc.map: $(SHLIB_MKMAP) libgcc.map.in $(libgcc-s-objects)
 	  cat libgcc.map.in; \
 	} | $(AWK) -f $(SHLIB_MKMAP) $(SHLIB_MKMAP_OPTS) > tmp-$@
 	mv tmp-$@ $@
-libgcc_s$(SHLIB_EXT): libgcc.map
+$(SHLIB_BASE_NAME)$(SHLIB_EXT): libgcc.map
 mapfile = libgcc.map
 endif
 
@@ -943,7 +945,7 @@ libgcc-std.ver: $(srcdir)/libgcc-std.ver.in
 	sed -e 's/__PFX__/$(LIBGCC_VER_GNU_PREFIX)/g' \
 	    -e 's/__FIXPTPFX__/$(LIBGCC_VER_FIXEDPOINT_GNU_PREFIX)/g' < $< > $@
 
-libgcc_s$(SHLIB_EXT): $(libgcc-s-objects) $(extra-parts) libgcc.a
+$(SHLIB_BASE_NAME)$(SHLIB_EXT): $(libgcc-s-objects) $(extra-parts) libgcc.a
 	# @multilib_flags@ is still needed because this may use
 	# $(GCC_FOR_TARGET) and $(LIBGCC2_CFLAGS) directly.
 	# @multilib_dir@ is not really necessary, but sometimes it has
@@ -952,7 +954,7 @@ libgcc_s$(SHLIB_EXT): $(libgcc-s-objects) $(extra-parts) libgcc.a
 	$(subst @multilib_flags@,$(CFLAGS) -B./,$(subst \
 		@multilib_dir@,$(MULTIDIR),$(subst \
 		@shlib_objs@,$(objects) libgcc.a,$(subst \
-		@shlib_base_name@,libgcc_s,$(subst \
+		@shlib_base_name@,$(SHLIB_BASE_NAME),$(subst \
 		@shlib_map_file@,$(mapfile),$(subst \
 		@shlib_slibdir_qual@,$(MULTIOSSUBDIR),$(subst \
 		@shlib_slibdir@,$(shlib_slibdir),$(SHLIB_LINK))))))))
@@ -1109,7 +1111,7 @@ install-shared:
 	$(RANLIB) $(DESTDIR)$(inst_libdir)/libgcc_eh.a
 
 	$(subst @multilib_dir@,$(MULTIDIR),$(subst \
-		@shlib_base_name@,libgcc_s,$(subst \
+		@shlib_base_name@,$(SHLIB_BASE_NAME),$(subst \
 		@shlib_slibdir_qual@,$(MULTIOSSUBDIR),$(SHLIB_INSTALL))))
 
 install-leaf: $(install-shared) $(install-libunwind)

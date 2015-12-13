@@ -1,0 +1,80 @@
+# Build a shared libgcc library with the darwin linker.
+SHLIB_SOVERSION = 1
+SHLIB_VERSTRING = -compatibility_version $(SHLIB_SOVERSION) -current_version $(SHLIB_SOVERSION).0
+SHLIB_EXT = .dylib
+SHLIB_BASE_NAME = libgcc_ext
+SHLIB_INSTALL_NAME = $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT)
+SHLIB_SONAME = @shlib_base_name@$(SHLIB_EXT)
+SHLIB_MAP = @shlib_map_file@
+SHLIB_OBJS = @shlib_objs@
+SHLIB_DIR = @multilib_dir@
+SHLIB_LC = -lc
+
+# Darwin uses FAT files for libgcc.
+#	-Wl,-exported_symbols_list,$(SHLIB_MAP) \
+
+SHLIB_LINK = $(CC) $(LIBGCC2_CFLAGS) -dynamiclib -nodefaultlibs \
+	-install_name @rpath/$(SHLIB_INSTALL_NAME) \
+	-single_module -o $(SHLIB_DIR)/$(SHLIB_SONAME) \
+	$(SHLIB_VERSTRING) \
+	@multilib_flags@ $(SHLIB_OBJS) $(SHLIB_LC)
+
+#SHLIB_MKMAP = $(srcdir)/mkmap-flat.awk
+#SHLIB_MKMAP_OPTS = -v leading_underscore=1
+#SHLIB_MAPFILES = libgcc-std.ver $(srcdir)/config/libgcc-libsystem.ver
+#SHLIB_VERPFX = $(srcdir)/config/$(cpu_type)/libgcc-darwin
+
+LGCC_FILES = $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT)
+LEXT_STUBS = $(SHLIB_BASE_NAME).10.4$(SHLIB_EXT) $(SHLIB_BASE_NAME).10.5$(SHLIB_EXT)
+INSTALL_FILES=$(LGCC_FILES)
+
+# we do our own thing
+SHLIB_INSTALL =
+
+# For the toplevel multilib, build a fat archive including all the multilibs.
+ifeq ($(MULTIBUILDTOP),)
+
+ifeq ($(enable_shared),yes)
+all: $(INSTALL_FILES)
+install-leaf: install-darwin-libgccext-stubs
+endif
+
+$(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT): all-multi libgcc_ext$(SHLIB_EXT)
+	MLIBS=`$(CC) --print-multi-lib | sed -e 's/;.*$$//'` ; \
+	for mlib in $$MLIBS ; do \
+	  cp ../$${mlib}/libgcc/$${mlib}/$(SHLIB_BASE_NAME)$(SHLIB_EXT)  \
+	    ./$(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT)_T_$${mlib} || exit 1 ; \
+	done
+	$(LIPO) -output $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT) \
+	  -create $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT)_T*
+	rm $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT)_T*
+
+install-darwin-libgccext-stubs :
+	$(mkinstalldirs) $(DESTDIR)$(slibdir)
+	for d in $(INSTALL_FILES) ; do \
+	  $(INSTALL_DATA) $$d $(DESTDIR)$(slibdir)/$$d || exit 1 ; \
+	done
+	for d in $(LEXT_STUBS) ; do \
+	  if [ -f $(DESTDIR)$(slibdir)/$$d ]; then \
+	    rm -f $(DESTDIR)$(slibdir)/$$d; \
+	    $(LN_S) $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT) $(DESTDIR)$(slibdir)/$$d ; \
+	  else $(LN_S) $(SHLIB_BASE_NAME).$(SHLIB_SOVERSION)$(SHLIB_EXT) $(DESTDIR)$(slibdir)/$$d ; fi \
+	done
+else
+
+# Do not install shared libraries for any other multilibs.  Unless
+# we're putting them in the gcc directory during a build, for
+# compatibility with the pre-top-level layout.  In that case we
+# need symlinks.
+
+ifeq ($(enable_shared),yes)
+all: install-darwin-libgcc-links
+endif
+
+install-darwin-libgcc-links:
+	$(mkinstalldirs) $(gcc_objdir)$(MULTISUBDIR)
+	for file in $(INSTALL_FILES); do			\
+	  rm -f $(gcc_objdir)$(MULTISUBDIR)/$$file;		\
+	  $(LN_S) ../$$file $(gcc_objdir)$(MULTISUBDIR)/;	\
+	done
+endif

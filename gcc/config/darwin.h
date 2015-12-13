@@ -333,7 +333,8 @@ extern GTY(()) int darwin_ms_struct;
    need symbols from -lgcc.  */
 #undef REAL_LIBGCC_SPEC
 #define REAL_LIBGCC_SPEC						   \
-   "%{static-libgcc|static: -lgcc_eh -lgcc;				   \
+   "%{static-libgcc|static:						   \
+        %:version-compare(!> 10.6 mmacosx-version-min= -lgcc_eh) -lgcc;	   \
       shared-libgcc|fexceptions|fgnu-runtime:				   \
        %:version-compare(!> 10.5 mmacosx-version-min= -lgcc_s.10.4)	   \
        %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5)   \
