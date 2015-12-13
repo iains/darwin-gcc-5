@@ -252,7 +252,7 @@ case "${host_os}" in
     OPT_LDFLAGS="${OPT_LDFLAGS} -Wl,-single_module -Wl,-flat_namespace"
     os_include_dir="os/bsd/darwin"
     ;;
-  darwin[89] | darwin[89].* | darwin[1-9][0-9]* )
+  darwin8 | darwin8.* )
     # On Darwin, performance is improved if libstdc++ is single-module,
     # and on 8+ compatibility is better if not -flat_namespace.
     OPT_LDFLAGS="${OPT_LDFLAGS} -Wl,-single_module"
@@ -261,6 +261,10 @@ case "${host_os}" in
         OPTIMIZE_CXXFLAGS="${OPTIMIZE_CXXFLAGS} -fvisibility-inlines-hidden"
         ;;
     esac
+    os_include_dir="os/bsd/darwin"
+    ;;
+  darwin*)
+    # -single_module is the default, and visibility should be specified.
     os_include_dir="os/bsd/darwin"
     ;;
   *djgpp*)      # leading * picks up "msdosdjgpp"
