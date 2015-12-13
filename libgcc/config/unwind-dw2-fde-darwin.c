@@ -273,7 +273,7 @@ _Unwind_Find_FDE (void *pc, struct dwarf_eh_bases *bases)
 					  the_obj_info);
   return ret;
 }
-
+#if 0
 void *
 _darwin10_Unwind_FindEnclosingFunction (void *pc ATTRIBUTE_UNUSED)
 {
@@ -285,4 +285,4 @@ _darwin10_Unwind_FindEnclosingFunction (void *pc ATTRIBUTE_UNUSED)
 #endif
   return NULL;
 }
-
+#endif
