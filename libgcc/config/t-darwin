@@ -10,3 +10,13 @@ crttme.o: $(srcdir)/config/darwin-crt-tm.c
 # Use unwind-dw2-fde-darwin
 LIB2ADDEH = $(srcdir)/unwind-dw2.c $(srcdir)/config/unwind-dw2-fde-darwin.c \
   $(srcdir)/unwind-sjlj.c $(srcdir)/unwind-c.c
+
+LIB2EMUTLS =
+
+# Make a weak version for linking into shared libs
+emutls_w.o: $(srcdir)/emutls.c
+	$(gcc_compile) -DEMUTLS_ATTR='__attribute__((__weak__))' -c $<
+
+# Make a no-dead-strip version for linking into exes.
+emutls_s.o: $(srcdir)/emutls.c
+	$(gcc_compile) -DEMUTLS_ATTR='__attribute__((__used__))' -c $<

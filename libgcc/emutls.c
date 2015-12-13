@@ -50,8 +50,8 @@ struct __emutls_array
   void **data[];
 };
 
-void *__emutls_get_address (struct __emutls_object *);
-void __emutls_register_common (struct __emutls_object *, word, word, void *);
+void *__emutls_get_address (struct __emutls_object *) EMUTLS_ATTR;
+void __emutls_register_common (struct __emutls_object *, word, word, void *) EMUTLS_ATTR;
 
 #ifdef __GTHREADS
 #ifdef __GTHREAD_MUTEX_INIT

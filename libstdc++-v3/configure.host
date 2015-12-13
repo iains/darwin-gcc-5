@@ -377,6 +377,10 @@ case "${host}" in
      ;;
   powerpc*-*-darwin*)
     port_specific_symbol_files="\$(srcdir)/../config/os/bsd/darwin/ppc-extra.ver"
+    port_specific_symbol_files="${port_specific_symbol_files} \$(srcdir)/../config/os/bsd/darwin/emutls-extra.ver"
+    ;;
+  *darwin*)
+    port_specific_symbol_files="\$(srcdir)/../config/os/bsd/darwin/emutls-extra.ver"
     ;;
   *-*-solaris2.1[0-9])
     abi_baseline_pair=solaris2.10

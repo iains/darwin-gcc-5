@@ -316,7 +316,8 @@ extern GTY(()) int darwin_ms_struct;
 
 /* Machine dependent libraries.  */
 
-#define LIB_SPEC "%{!static:-lSystem}"
+#define LIB_SPEC \
+  "%{!static:-lSystem}"
 
 /* Support -mmacosx-version-min by supplying different (stub) libgcc_s.dylib
    libraries to link against, and by not linking against libgcc_s on
