@@ -165,6 +165,8 @@ extern GTY(()) int darwin_ms_struct;
    specifying the handling of options understood by generic Unix
    linkers, and for positional arguments like libraries.  */
 
+#define DARWIN_PRE_SYSLIB_SPEC ""
+
 #define LINK_COMMAND_SPEC_A \
    "%{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
     %(linker)" \
@@ -184,7 +186,13 @@ extern GTY(()) int darwin_ms_struct;
     %{!nostdlib:%{!nodefaultlibs:\
       %{%:sanitize(address): -lasan } \
       %{%:sanitize(undefined): -lubsan } \
-      %(link_ssp) %(link_gcc_c_sequence)\
+      %(link_ssp) \
+    }} \
+   " DARWIN_PRE_SYSLIB_SPEC " \
+    %{!nostdlib:%{!nodefaultlibs:\
+      %{!r:%{Zdynamiclib|Zbundle: -lemutls_w.o } \
+           %{!Zdynamiclib:%{!Zbundle: -lemutls_s.o }}} \
+      %(link_gcc_c_sequence) \
     }}\
     %{!nostdlib:%{!nostartfiles:%E}} %{T*} %{F*} }}}}}}}"
 
@@ -311,13 +319,13 @@ extern GTY(()) int darwin_ms_struct;
    %{pagezero_size*} %{segs_read_*} %{seglinkedit} %{noseglinkedit}  \
    %{sectalign*} %{sectobjectsymbols*} %{segcreate*} %{whyload} \
    %{whatsloaded} %{dylinker_install_name*} \
-   %{dylinker} %{Mach} "
-
+   %{dylinker} %{Mach} \
+    "
 
 /* Machine dependent libraries.  */
 
 #define LIB_SPEC \
-  "%{!static:-lSystem}"
+  "%{!static:-lSystem} -lgcc"
 
 /* Support -mmacosx-version-min by supplying different (stub) libgcc_s.dylib
    libraries to link against, and by not linking against libgcc_s on
@@ -335,18 +343,12 @@ extern GTY(()) int darwin_ms_struct;
 #undef REAL_LIBGCC_SPEC
 #define REAL_LIBGCC_SPEC						   \
    "%{static-libgcc|static:						   \
-        %:version-compare(!> 10.6 mmacosx-version-min= -lgcc_eh) -lgcc;	   \
+        %:version-compare(!> 10.6 mmacosx-version-min= -lgcc_eh) ;	   \
       shared-libgcc|fexceptions|fgnu-runtime:				   \
        %:version-compare(!> 10.5 mmacosx-version-min= -lgcc_s.10.4)	   \
-       %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5)   \
-       %:version-compare(!> 10.5 mmacosx-version-min= -lgcc_ext.10.4)	   \
-       %:version-compare(>= 10.5 mmacosx-version-min= -lgcc_ext.10.5)	   \
-       -lgcc ;								   \
+       %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5) ; \
       :%:version-compare(>< 10.3.9 10.5 mmacosx-version-min= -lgcc_s.10.4) \
-       %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5)   \
-       %:version-compare(!> 10.5 mmacosx-version-min= -lgcc_ext.10.4)	   \
-       %:version-compare(>= 10.5 mmacosx-version-min= -lgcc_ext.10.5)	   \
-       -lgcc }"
+       %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5) } "
 
 /* We specify crt0.o as -lcrt0.o so that ld will search the library path.
 
