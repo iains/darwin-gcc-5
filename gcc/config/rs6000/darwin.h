@@ -227,12 +227,13 @@ extern int darwin_emit_branch_islands;
 /* .. but GAS needs more info on the command line.  */
 #if HAVE_GNU_AS
 #undef ASM_SPEC
-#define ASM_SPEC \
-"-arch %(darwin_arch) -mregnames %{static}				\
+#define ASM_SPEC "-arch %(darwin_arch) \
+ " ASM_OPTIONS " %{static} -mregnames \
+ %{Zforce_cpusubtype_ALL:-force_cpusubtype_ALL} \
  %{!fno-altivec:							\
    %{!mno-altivec:							\
      %:version-compare(>= 10.5 mmacosx-version-min= -maltivec)}}	\
- %{maltivec: -maltivec}"
+ %{maltivec: -maltivec}"  ASM_MMACOSX_VERSION_MIN_SPEC
 #endif
 
 /* This is how to output an assembler line that says to advance
