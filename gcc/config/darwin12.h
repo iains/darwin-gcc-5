@@ -22,8 +22,7 @@ along with GCC; see the file COPYING3.  If not see
 #define DARWIN_PRE_SYSLIB_SPEC \
 "%:version-compare(>= 10.6 mmacosx-version-min= -no_compact_unwind) \
  %{fno-pic|fno-PIC|fno-pie|fno-PIE|fapple-kext|mkernel|static|mdynamic-no-pic: \
-   %:version-compare(>= 10.7 mmacosx-version-min= -no_pie) } \
-  %{rdynamic:-export_dynamic} %<rdynamic "
+   %:version-compare(>= 10.7 mmacosx-version-min= -no_pie) } "
 
 #undef  LINK_GCC_C_SEQUENCE_SPEC
 #define LINK_GCC_C_SEQUENCE_SPEC \

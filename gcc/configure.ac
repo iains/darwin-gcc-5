@@ -202,6 +202,12 @@ AC_ARG_WITH(gnu-ld,
 gnu_ld_flag="$with_gnu_ld",
 gnu_ld_flag=no)
 
+# With ld64
+AC_ARG_WITH(ld64,
+[AS_HELP_STRING([--with-ld64], [arrange to work with ld64])],
+ld64_flag="$with_ld64",
+ld64_flag=unset)
+
 # With pre-defined ld
 AC_ARG_WITH(ld,
 [AS_HELP_STRING([--with-ld], [arrange to use the specified ld (full pathname)])],
@@ -211,10 +217,20 @@ if test x"${DEFAULT_LINKER+set}" = x"set"; then
     AC_MSG_ERROR([cannot execute: $DEFAULT_LINKER: check --with-ld or env. var. DEFAULT_LINKER])
   elif $DEFAULT_LINKER -v < /dev/null 2>&1 | grep GNU > /dev/null; then
     gnu_ld_flag=yes
+  elif $DEFAULT_LINKER -v < /dev/null 2>&1 | grep ld64- > /dev/null; then
+    ld64_flag=yes
   fi
   AC_DEFINE_UNQUOTED(DEFAULT_LINKER,"$DEFAULT_LINKER",
 	[Define to enable the use of a default linker.])
 fi
+
+case $target in
+    *darwin*)
+        if test x"${ld64_flag}" = x"unset"; then
+            ld64_flag=yes
+        fi
+        ;;
+esac
 
 AC_MSG_CHECKING([whether a default linker was specified])
 if test x"${DEFAULT_LINKER+set}" = x"set"; then
@@ -5026,6 +5042,19 @@ AC_DEFINE_UNQUOTED(HAVE_LD_COMPRESS_DEBUG, $gcc_cv_ld_compress_debug,
 AC_DEFINE_UNQUOTED(LD_COMPRESS_DEBUG_OPTION, "$gcc_cv_ld_compress_debug_option",
 [Define to the linker option to enable compressed debug sections.])
 AC_MSG_RESULT($gcc_cv_ld_compress_debug)
+
+AC_MSG_CHECKING(linker for -export_dynamic support)
+gcc_cv_ld64_export_dynamic=0
+if test x"$ld64_flag" = x"yes"; then
+  # Test for ld64 features, we assume that there's a meaningful value to gcc_cv_ld.
+  gcc_cv_ld64_export_dynamic=1
+  if $gcc_cv_ld -export_dynamic < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
+    gcc_cv_ld64_export_dynamic=0
+  fi
+fi
+AC_DEFINE_UNQUOTED(LD64_HAS_EXPORT_DYNAMIC, $gcc_cv_ld64_export_dynamic,
+[Define to 1 if ld64 supports '-export_dynamic'.])
+AC_MSG_RESULT($gcc_cv_ld64_export_dynamic)
 
 # --------
 # UNSORTED

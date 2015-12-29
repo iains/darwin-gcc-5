@@ -167,6 +167,12 @@ extern GTY(()) int darwin_ms_struct;
 
 #define DARWIN_PRE_SYSLIB_SPEC ""
 
+#if LD64_HAS_EXPORT_DYNAMIC
+#define DARWIN_EXPORT_DYNAMIC " %{rdynamic:-export_dynamic}"
+#else
+#define DARWIN_EXPORT_DYNAMIC " %{rdynamic: %nrdynamic is not supported}"
+#endif
+
 #define LINK_COMMAND_SPEC_A \
    "%{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
     %(linker)" \
@@ -189,6 +195,7 @@ extern GTY(()) int darwin_ms_struct;
       %(link_ssp) \
     }} \
    " DARWIN_PRE_SYSLIB_SPEC " \
+   " DARWIN_EXPORT_DYNAMIC " %<rdynamic \
     %{!nostdlib:%{!nodefaultlibs:\
       %{!r:%{Zdynamiclib|Zbundle: -lemutls_w.o } \
            %{!Zdynamiclib:%{!Zbundle: -lemutls_s.o }}} \
@@ -407,7 +414,7 @@ extern GTY(()) int darwin_ms_struct;
 #if HAVE_GNU_AS
 #define ASM_OPTIONS ""
 #else
-#define ASM_OPTIONS "%{v} %{w:-W} %{I*}"
+#define ASM_OPTIONS "%{v: -V -v} %{w:-W} %{I*}"
 #endif
 
 /* Default Darwin ASM_SPEC, very simple. */
