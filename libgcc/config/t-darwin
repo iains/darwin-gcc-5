@@ -24,3 +24,7 @@ emutls_w.o: $(srcdir)/emutls.c
 # Make a no-dead-strip version for linking into exes.
 emutls_s.o: $(srcdir)/emutls.c
 	$(gcc_compile) -DEMUTLS_ATTR='__attribute__((__used__))' -c $<
+
+# Patch to __Unwind_Find_Enclosing_Function for Darwin10 (only used by Java).
+d10-uwfef.o: $(srcdir)/config/darwin10-unwind-find-enc-func.c
+	$(crt_compile) $(DARWIN_EXTRA_CRT_BUILD_CFLAGS) -mmacosx-version-min=10.6 -c $<
