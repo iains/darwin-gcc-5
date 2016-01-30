@@ -9788,6 +9788,9 @@ ix86_code_end (void)
       DECL_INITIAL (decl) = make_node (BLOCK);
       current_function_decl = decl;
       init_function_start (decl);
+      /* We're about to hide the function body from callees of final_* by
+	 emitting it directly; tell them we're a thunk, if they care.  */
+      cfun->is_thunk = true;
       first_function_block_is_cold = false;
       /* Make sure unwind info is emitted for the thunk if needed.  */
       final_start_function (emit_barrier (), asm_out_file, 1);
@@ -12405,36 +12408,22 @@ ix86_output_function_epilogue (FILE *file ATTRIBUTE_UNUSED, HOST_WIDE_INT)
   if (pic_offset_table_rtx
       && !ix86_use_pseudo_pic_reg ())
     SET_REGNO (pic_offset_table_rtx, REAL_PIC_OFFSET_TABLE_REGNUM);
-#if TARGET_MACHO
-  /* Mach-O doesn't support labels at the end of objects, so if
-     it looks like we might want one, insert a NOP.  */
-  {
-    rtx_insn *insn = get_last_insn ();
-    rtx_insn *deleted_debug_label = NULL;
-    while (insn
-	   && NOTE_P (insn)
-	   && NOTE_KIND (insn) != NOTE_INSN_DELETED_LABEL)
-      {
-	/* Don't insert a nop for NOTE_INSN_DELETED_DEBUG_LABEL
-	   notes only, instead set their CODE_LABEL_NUMBER to -1,
-	   otherwise there would be code generation differences
-	   in between -g and -g0.  */
-	if (NOTE_P (insn) && NOTE_KIND (insn) == NOTE_INSN_DELETED_DEBUG_LABEL)
-	  deleted_debug_label = insn;
-	insn = PREV_INSN (insn);
-      }
-    if (insn
-	&& (LABEL_P (insn)
-	    || (NOTE_P (insn)
-		&& NOTE_KIND (insn) == NOTE_INSN_DELETED_LABEL)))
-      fputs ("\tnop\n", file);
-    else if (deleted_debug_label)
-      for (insn = deleted_debug_label; insn; insn = NEXT_INSN (insn))
-	if (NOTE_KIND (insn) == NOTE_INSN_DELETED_DEBUG_LABEL)
-	  CODE_LABEL_NUMBER (insn) = -1;
-  }
-#endif
 
+  if (TARGET_MACHO && cfun && ! cfun->is_thunk)
+    {
+      /* Darwin doesn't want empty function bodies, earlier linkers demand
+	 that at least one byte is present.  Thunks always have content,
+	 even when that is rendered invisible by direct output.  */
+      rtx_insn *insn = get_last_insn ();
+      /* Look for any "real" insn.  */
+      while (insn && ! INSN_P (insn))
+	insn = PREV_INSN (insn);
+      /* If we don't find any, we've got an empty function body; i.e.
+	 completely empty - without a return or branch.  Reaching an
+	 empty function body means UB.  Let's trap it.  */
+      if (insn == NULL)
+	fputs ("\tud2\n", file);
+    }
 }
 
 /* Return a scratch register to use in the split stack prologue.  The
