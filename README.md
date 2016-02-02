@@ -6,13 +6,20 @@ This branch is the current release of my changes for Darwin from the GCC 5.3 bra
 
 It contains a number of back-ports for fixes on the GCC trunk and some changes/additions that would not be appropriate for application to the upstream GCC-5 branch.
 
-Release : gcc-darwin-5-3r0
+Release : gcc-darwin-5-3r1
 
-This has been tested on:
-  i686-apple-darwin9, powerpc-apple-darwin9, i686-apple-darwin10
-  x86-64-apple-darwin{10,11,12,13,14}
+Changes
+=======
 
-It has been tested with both the "normal Xcode-provided" assembler, linker and other tools and with "darwin-xtools" (a companion project).
+5.3r1
+Allowed for a build of powerpc-apple-darwin10 (strictly ppc7400 is only supported by Rosetta).
+
+Back-ported the proposed fix for PR57438 to avoid empty function bodies;
+This was preventing optimised builds of some code that contained asserts resulting in function bodies containing only unreachable code.
+
+Differences from "upstream"
+===========================
+
 
 There are a number of significant differences to the "upstream" (which is the 'master' branch in this repository).
 
