@@ -24,7 +24,7 @@ AC_DEFUN([GCC_CHECK_ELF_STYLE_WEAKREF], [
                   ac_cv_have_elf_style_weakref, [
   weakref_m4_saved_CFLAGS="$CFLAGS"
   case "${host}" in
-    *-apple-darwin*) CFLAGS="$CFLAGS -Wl,-undefined,dynamic_lookup" ;;
+    *-darwin*) CFLAGS="$CFLAGS -Wl,-undefined,dynamic_lookup" ;;
     *) ;;
   esac  
   AC_RUN_IFELSE([AC_LANG_SOURCE([[
@@ -38,7 +38,7 @@ int main ()
 }
 ]])], ac_cv_have_elf_style_weakref=yes, ac_cv_have_elf_style_weakref=no, [
 case "${host}" in
-  *-apple-darwin[[89]]*) ac_cv_have_elf_style_weakref=no ;;
+  *-darwin[[89]]*) ac_cv_have_elf_style_weakref=no ;;
   *) ac_cv_have_elf_style_weakref=yes;;
 esac])CFLAGS="$weakref_m4_saved_CFLAGS"])
 if test x"$ac_cv_have_elf_style_weakref" = xyes; then
