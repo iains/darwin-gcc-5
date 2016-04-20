@@ -601,17 +601,6 @@ case ${target} in
 *-*-darwin*)
   tmake_file="t-darwin ${cpu_type}/t-darwin"
   tm_file="${tm_file} darwin.h"
-  case ${target} in
-  *-*-darwin9*)
-    tm_file="${tm_file} darwin9.h"
-    ;;
-  *-*-darwin[12][01]*)
-    tm_file="${tm_file} darwin9.h darwin10.h"
-    ;;
-  *-*-darwin[1][2-9]* | *-*-darwin[2][0-9]*)
-    tm_file="${tm_file} darwin9.h darwin10.h darwin12.h"
-    ;;
-  esac
   tm_file="${tm_file} ${cpu_type}/darwin.h"
   tm_p_file="${tm_p_file} darwin-protos.h"
   target_gtfiles="\$(srcdir)/config/darwin.c"
@@ -2259,6 +2248,8 @@ pdp11-*-*)
 powerpc-*-darwin*)
 	extra_options="${extra_options} rs6000/darwin.opt"
 	case ${target} in
+	  *-darwin[1-6]*)
+	    ;;
 	  *-darwin7*)
 	    tm_file="${tm_file} rs6000/darwin7.h"
 	    ;;

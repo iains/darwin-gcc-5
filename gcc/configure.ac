@@ -5043,18 +5043,43 @@ AC_DEFINE_UNQUOTED(LD_COMPRESS_DEBUG_OPTION, "$gcc_cv_ld_compress_debug_option",
 [Define to the linker option to enable compressed debug sections.])
 AC_MSG_RESULT($gcc_cv_ld_compress_debug)
 
-AC_MSG_CHECKING(linker for -export_dynamic support)
-gcc_cv_ld64_export_dynamic=0
 if test x"$ld64_flag" = x"yes"; then
   # Test for ld64 features, we assume that there's a meaningful value to gcc_cv_ld.
+  AC_MSG_CHECKING(linker version)
+  gcc_cv_ld64_version=`$gcc_cv_ld -v 2>&1 | sed s/.*ld64-// | head -n1 |awk '{print $1}'`
+
+  AC_DEFINE_UNQUOTED(LD64_VERSION, $gcc_cv_ld64_version,
+  [Define to ld64 version.])
+  AC_MSG_RESULT($gcc_cv_ld64_version)
+
+  AC_MSG_CHECKING(linker for -export_dynamic support)
   gcc_cv_ld64_export_dynamic=1
   if $gcc_cv_ld -export_dynamic < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
     gcc_cv_ld64_export_dynamic=0
   fi
+  AC_DEFINE_UNQUOTED(LD64_HAS_EXPORT_DYNAMIC, $gcc_cv_ld64_export_dynamic,
+  [Define to 1 if ld64 supports '-export_dynamic'.])
+  AC_MSG_RESULT($gcc_cv_ld64_export_dynamic)
+
+  AC_MSG_CHECKING(linker for -no_pie)
+  gcc_cv_ld64_no_pie=1
+  if $gcc_cv_ld -no_pie < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
+    gcc_cv_ld64_no_pie=0
+  fi
+  AC_DEFINE_UNQUOTED(LD64_HAS_NO_PIE, $gcc_cv_ld64_no_pie,
+  [Define to 1 if ld64 supports '-no_pie'.])
+  AC_MSG_RESULT($gcc_cv_ld64_no_pie)
+
+  AC_MSG_CHECKING(linker for -no_compact_unwind)
+   gcc_cv_ld64_no_compact_unwind=1
+  if $gcc_cv_ld -no_compact_unwind < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
+    gcc_cv_ld64_no_compact_unwind=0
+  fi
+  AC_DEFINE_UNQUOTED(LD64_HAS_NO_COMPACT_UNWIND, $gcc_cv_ld64_no_compact_unwind,
+  [Define to 1 if ld64 supports '-no_compact_unwind'.])
+  AC_MSG_RESULT($gcc_cv_ld64_no_compact_unwind)
+
 fi
-AC_DEFINE_UNQUOTED(LD64_HAS_EXPORT_DYNAMIC, $gcc_cv_ld64_export_dynamic,
-[Define to 1 if ld64 supports '-export_dynamic'.])
-AC_MSG_RESULT($gcc_cv_ld64_export_dynamic)
 
 # --------
 # UNSORTED

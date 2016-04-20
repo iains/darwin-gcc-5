@@ -11,9 +11,14 @@ DARWIN_GCC_MDYNAMIC_NO_PIC := \
    $(CC) -S -xc /dev/null -o /dev/null -mno-dynamic-no-pic 2>/dev/null \
    || echo -mdynamic-no-pic ;; esac`
 
-# ld on Darwin versions >= 10.7 defaults to PIE executables. Disable this for
-# gcc components, since it is incompatible with our pch implementation.
-DARWIN_NO_PIE := `case ${host} in *-*-darwin[1][1-9]*) echo -Wl,-no_pie ;; esac;`
+# If we have a version of ld that understands -no_pie, then invoke this to
+# disable PIE for gcc components, since it is incompatible with our pch
+# implementation.  Versions of ld that don't understand no_pie will not
+# try to add it.
+DARWIN_NO_PIE := `case ${host} in *-darwin*) \
+  echo "int main() {return 0;}" | \
+  $(CC) -xc - -o /dev/null -Wl,-no_pie 2>/dev/null \
+  && echo -Wl,-no_pie ;; esac;`
 
 BOOT_CFLAGS += $(DARWIN_MDYNAMIC_NO_PIC)
 BOOT_LDFLAGS += $(DARWIN_NO_PIE)

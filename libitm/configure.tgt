@@ -141,8 +141,13 @@ case "${target}" in
   *-*-gnu* | *-*-k*bsd*-gnu \
   | *-*-netbsd* | *-*-freebsd* | *-*-openbsd* \
   | *-*-solaris2* | *-*-sysv4* | *-*-hpux11* \
-  | *-*-darwin* | *-*-aix* | *-*-dragonfly*)
+  | *-*-aix* | *-*-dragonfly*)
 	# POSIX system.  The OS is supported.
+	;;
+
+  *-*-darwin*)
+	# POSIX system.  The OS is supported.
+	XLDFLAGS="${XLDFLAGS} -Wl,-undefined,dynamic_lookup"
 	;;
 
   *)	# Non-POSIX, or embedded system

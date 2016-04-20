@@ -14683,14 +14683,14 @@ $as_echo "$lt_cv_ld_force_load" >&6; }
       # if running on 10.5 or later, the deployment target defaults
       # to the OS version, if on x86, and 10.4, the deployment
       # target defaults to 10.4. Don't you love it?
-      case ${MACOSX_DEPLOYMENT_TARGET-10.0},$host in
-	10.0,*86*-darwin8*|10.0,*-darwin[91]*)
-	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
-	10.[012][,.]*)
-	  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
-	10.*)
-	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
-      esac
+      #case ${MACOSX_DEPLOYMENT_TARGET-10.0},$host in
+	#10.0,*86*-darwin8*|10.0,*-darwin[[91]]*)
+	#  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
+	#10.[[012]][[,.]]*)
+	#  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+	#10.*)
+	#  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
+     # esac
     ;;
   esac
     if test "$lt_cv_apple_cc_single_mod" = "yes"; then
@@ -27546,23 +27546,63 @@ _ACEOF
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_ld_compress_debug" >&5
 $as_echo "$gcc_cv_ld_compress_debug" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking linker for -export_dynamic support" >&5
-$as_echo_n "checking linker for -export_dynamic support... " >&6; }
-gcc_cv_ld64_export_dynamic=0
 if test x"$ld64_flag" = x"yes"; then
   # Test for ld64 features, we assume that there's a meaningful value to gcc_cv_ld.
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking linker version" >&5
+$as_echo_n "checking linker version... " >&6; }
+  gcc_cv_ld64_version=`$gcc_cv_ld -v 2>&1 | sed s/.*ld64-// | head -n1 |awk '{print $1}'`
+
+
+cat >>confdefs.h <<_ACEOF
+#define LD64_VERSION $gcc_cv_ld64_version
+_ACEOF
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_ld64_version" >&5
+$as_echo "$gcc_cv_ld64_version" >&6; }
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking linker for -export_dynamic support" >&5
+$as_echo_n "checking linker for -export_dynamic support... " >&6; }
   gcc_cv_ld64_export_dynamic=1
   if $gcc_cv_ld -export_dynamic < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
     gcc_cv_ld64_export_dynamic=0
   fi
-fi
 
 cat >>confdefs.h <<_ACEOF
 #define LD64_HAS_EXPORT_DYNAMIC $gcc_cv_ld64_export_dynamic
 _ACEOF
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_ld64_export_dynamic" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_ld64_export_dynamic" >&5
 $as_echo "$gcc_cv_ld64_export_dynamic" >&6; }
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking linker for -no_pie" >&5
+$as_echo_n "checking linker for -no_pie... " >&6; }
+  gcc_cv_ld64_no_pie=1
+  if $gcc_cv_ld -no_pie < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
+    gcc_cv_ld64_no_pie=0
+  fi
+
+cat >>confdefs.h <<_ACEOF
+#define LD64_HAS_NO_PIE $gcc_cv_ld64_no_pie
+_ACEOF
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_ld64_no_pie" >&5
+$as_echo "$gcc_cv_ld64_no_pie" >&6; }
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking linker for -no_compact_unwind" >&5
+$as_echo_n "checking linker for -no_compact_unwind... " >&6; }
+   gcc_cv_ld64_no_compact_unwind=1
+  if $gcc_cv_ld -no_compact_unwind < /dev/null 2>&1 | grep 'unknown option' > /dev/null; then
+    gcc_cv_ld64_no_compact_unwind=0
+  fi
+
+cat >>confdefs.h <<_ACEOF
+#define LD64_HAS_NO_COMPACT_UNWIND $gcc_cv_ld64_no_compact_unwind
+_ACEOF
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_ld64_no_compact_unwind" >&5
+$as_echo "$gcc_cv_ld64_no_compact_unwind" >&6; }
+
+fi
 
 # --------
 # UNSORTED

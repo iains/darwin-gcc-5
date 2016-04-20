@@ -182,6 +182,9 @@ Driver Separate Alias(Zsegs_read_write_addr)
 single_module
 Driver Alias(Zsingle_module)
 
+target-linker-version
+Driver Separate
+
 twolevel_namespace
 Driver
 

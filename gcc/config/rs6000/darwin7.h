@@ -28,5 +28,26 @@ along with GCC; see the file COPYING3.  If not see
   %:version-compare(!< 10.3 mmacosx-version-min= -lmx)\
   -lSystem}"
 
+/* FIXME: we should detect this, not assume it.  */
+#undef  ASM_OUTPUT_ALIGNED_COMMON
+
+#ifdef HAVE_AS_STABS_DIRECTIVE
+/* For Darwin <= 8, we will default to stabs debug (if we have it), since that's
+   what the native implementation did.  */
+# undef	DSYMUTIL_SPEC
+# define DSYMUTIL_SPEC \
+   "%{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:%{!save-temps*: \
+    %{v} \
+    %{gdwarf-2:%{!gstabs*:%{!g0: -idsym}}}\
+    %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm: \
+    %{gdwarf-2:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}}"
+
+# define DBX_DEBUGGING_INFO 1
+# define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
+#endif
+
+#undef STACK_CHECK_STATIC_BUILTIN
+#define STACK_CHECK_STATIC_BUILTIN 0
+
 #undef DEF_MIN_OSX_VERSION
 #define DEF_MIN_OSX_VERSION "10.3.9"

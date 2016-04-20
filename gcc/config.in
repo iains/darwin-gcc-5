@@ -1837,6 +1837,24 @@
 #endif
 
 
+/* Define to 1 if ld64 supports '-no_compact_unwind'. */
+#ifndef USED_FOR_TARGET
+#undef LD64_HAS_NO_COMPACT_UNWIND
+#endif
+
+
+/* Define to 1 if ld64 supports '-no_pie'. */
+#ifndef USED_FOR_TARGET
+#undef LD64_HAS_NO_PIE
+#endif
+
+
+/* Define to ld64 version. */
+#ifndef USED_FOR_TARGET
+#undef LD64_VERSION
+#endif
+
+
 /* Define to the linker option to ignore unused dependencies. */
 #ifndef USED_FOR_TARGET
 #undef LD_AS_NEEDED_OPTION

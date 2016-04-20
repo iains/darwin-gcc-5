@@ -118,6 +118,9 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #undef	DEFAULT_PCC_STRUCT_RETURN
 #define DEFAULT_PCC_STRUCT_RETURN 0
 
+#undef STACK_CHECK_STATIC_BUILTIN
+#define STACK_CHECK_STATIC_BUILTIN 1
+
 /* True if pragma ms_struct is in effect.  */
 extern GTY(()) int darwin_ms_struct;
 
@@ -165,7 +168,24 @@ extern GTY(()) int darwin_ms_struct;
    specifying the handling of options understood by generic Unix
    linkers, and for positional arguments like libraries.  */
 
-#define DARWIN_PRE_SYSLIB_SPEC ""
+#undef DARWIN_PRE_SYSLIB_SPECA
+#if LD64_HAS_NO_COMPACT_UNWIND
+/* ld64 won't try to build compact unwind for < 10.6.  */
+#define DARWIN_PRE_SYSLIB_SPECA \
+"%:version-compare(>= 10.6 mmacosx-version-min= -no_compact_unwind)"
+#else
+#define DARWIN_PRE_SYSLIB_SPECA ""
+#endif
+
+#undef DARWIN_PRE_SYSLIB_SPECB
+#if LD64_HAS_NO_PIE
+/* ld64 defaults to no_pie < 10.7.  */
+#define DARWIN_PRE_SYSLIB_SPECB \
+ "%{fno-pic|fno-PIC|fno-pie|fno-PIE|fapple-kext|mkernel|static|mdynamic-no-pic: \
+   %:version-compare(>= 10.7 mmacosx-version-min= -no_pie) }"
+#else
+#define DARWIN_PRE_SYSLIB_SPECB ""
+#endif
 
 #if LD64_HAS_EXPORT_DYNAMIC
 #define DARWIN_EXPORT_DYNAMIC " %{rdynamic:-export_dynamic}"
@@ -194,7 +214,7 @@ extern GTY(()) int darwin_ms_struct;
       %{%:sanitize(undefined): -lubsan } \
       %(link_ssp) \
     }} \
-   " DARWIN_PRE_SYSLIB_SPEC " \
+   " DARWIN_PRE_SYSLIB_SPECA DARWIN_PRE_SYSLIB_SPECB " \
    " DARWIN_EXPORT_DYNAMIC " %<rdynamic \
     %{!nostdlib:%{!nodefaultlibs:\
       %{!r:%{Zdynamiclib|Zbundle: -lemutls_w.o } \
@@ -205,22 +225,27 @@ extern GTY(()) int darwin_ms_struct;
 
 #define DSYMUTIL "\ndsymutil"
 
+/* Default to DWARF2 debug.  */
+#undef DSYMUTIL_SPEC
 #define DSYMUTIL_SPEC \
    "%{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:%{!save-temps*: \
     %{v} \
-    %{gdwarf-2:%{!gstabs*:%{!g0: -idsym}}}\
-    %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm: \
-    %{gdwarf-2:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}}"
+    %{g*:%{!gstabs*:%{!g0: -idsym}}}\
+    %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm|.s|.f|.f90|.f95|.f03|.f77|.for|.F|.F90|.F95|.F03: \
+    %{g*:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}}"
 
 #define LINK_COMMAND_SPEC LINK_COMMAND_SPEC_A DSYMUTIL_SPEC
 
 /* Tell collect2 to run dsymutil for us as necessary.  */
 #define COLLECT_RUN_DSYMUTIL 1
 
-/* We only want one instance of %G, since libSystem (Darwin's -lc) does not depend
-   on libgcc.  */
+/* We only want one instance of %G, since libSystem (Darwin's -lc) does not
+   depend on libgcc.  We add a small shim for 10.6 that fixes an unwinder
+   issue in the system.  */
 #undef  LINK_GCC_C_SEQUENCE_SPEC
-#define LINK_GCC_C_SEQUENCE_SPEC "%G %L"
+#define LINK_GCC_C_SEQUENCE_SPEC \
+ "%{!nostdlib:%:version-compare(>< 10.6 10.7 mmacosx-version-min= -ld10-uwfef.o)} \
+  %G %L "
 
 /* ld64 supports a sysroot, it just has a different name and there's no easy
    way to check for it at config time.  */
@@ -238,7 +263,10 @@ extern GTY(()) int darwin_ms_struct;
 #define STANDARD_STARTFILE_PREFIX_1 ""
 #define STANDARD_STARTFILE_PREFIX_2 ""
 
-#define DARWIN_PIE_SPEC "%{fpie|pie|fPIE:}"
+#define DARWIN_PIE_SPEC \
+  "%{fpie|pie|fPIE: \
+     %{mdynamic-no-pic: %n'-mdynamic-no-pic' overrides '-pie', '-fpie' or '-fPIE'; \
+      :%:version-compare(>= 10.5 mmacosx-version-min= -pie)}}"
 
 /* Please keep the random linker options in alphabetical order (modulo
    'Z' and 'no' prefixes). Note that options taking arguments may appear
@@ -423,18 +451,11 @@ extern GTY(()) int darwin_ms_struct;
   %{Zforce_cpusubtype_ALL:-force_cpusubtype_ALL} \
   %{static}" ASM_MMACOSX_VERSION_MIN_SPEC
 
-/* Default ASM_DEBUG_SPEC.  Darwin's as cannot currently produce dwarf
-   debugging data.  */
-
-#define ASM_DEBUG_SPEC  "%{g*:%{!g0:%{!gdwarf*:--gstabs}}}"
-
-/* We still allow output of STABS if the assembler supports it.  */
-#ifdef HAVE_AS_STABS_DIRECTIVE
-#define DBX_DEBUGGING_INFO 1
-#define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
-#endif
-
+/* Default to DWARF2.  */
+#undef PREFERRED_DEBUGGING_TYPE
+#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
 #define DWARF2_DEBUGGING_INFO 1
+#define DARWIN_PREFER_DWARF
 
 #define DEBUG_FRAME_SECTION	"__DWARF,__debug_frame,regular,debug"
 #define DEBUG_INFO_SECTION	"__DWARF,__debug_info,regular,debug"
@@ -452,6 +473,17 @@ extern GTY(()) int darwin_ms_struct;
 #define TARGET_WANT_DEBUG_PUB_SECTIONS true
 
 #define TARGET_FORCE_AT_COMP_DIR true
+
+/* We still allow output of STABS if the assembler supports it.  */
+#ifdef HAVE_AS_STABS_DIRECTIVE
+#define DBX_DEBUGGING_INFO 1
+
+/* None of Darwin's assemblers currently produce dwarf
+   debugging data.  */
+#define ASM_DEBUG_SPEC  "%{g*:%{!g0:%{!gdwarf*:--gstabs}}}"
+#else
+#define ASM_DEBUG_SPEC  ""
+#endif
 
 /* When generating stabs debugging, use N_BINCL entries.  */
 
@@ -691,6 +723,17 @@ int darwin_label_is_anonymous_local_objc_name (const char *name);
 #define ASM_OUTPUT_ALIGNED_DECL_COMMON(FILE, DECL, NAME, SIZE, ALIGN)	\
 	darwin_asm_output_aligned_decl_common				\
 				   ((FILE), (DECL), (NAME), (SIZE), (ALIGN))
+
+#undef  ASM_OUTPUT_ALIGNED_COMMON
+#define ASM_OUTPUT_ALIGNED_COMMON(FILE, NAME, SIZE, ALIGN)		\
+  do {									\
+    unsigned HOST_WIDE_INT _new_size = (SIZE);				\
+    fprintf ((FILE), "\t.comm ");						\
+    assemble_name ((FILE), (NAME));					\
+    if (_new_size == 0) _new_size = 1;					\
+    fprintf ((FILE), ","HOST_WIDE_INT_PRINT_UNSIGNED",%u\n",		\
+	     _new_size, floor_log2 ((ALIGN) / BITS_PER_UNIT));		\
+  } while (0)
 
 /* The generic version, archs should over-ride where required.  */
 #define MACHOPIC_NL_SYMBOL_PTR_SECTION ".non_lazy_symbol_pointer"

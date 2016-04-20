@@ -278,7 +278,7 @@ libstdc++-symbols.explist : libstdc++-symbols.ver \
 		${glibcxx_srcdir}/scripts/make_exports.pl \
 		$(libstdc___la_OBJECTS) $(libstdc___la_LIBADD)
 	echo " .text" | $(CXXCOMPILE) -shared -x assembler - -o temp.dylib
-	NM_FOR_TARGET = "$(NM_FOR_TARGET) -g" \
+	NM_FOR_TARGET="$(NM_FOR_TARGET) -g" \
 	perl ${glibcxx_srcdir}/scripts/make_exports.pl \
 	  libstdc++-symbols.ver \
 	  $(libstdc___la_OBJECTS:%.lo=.libs/%.o) \
