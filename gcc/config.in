@@ -48,6 +48,12 @@
 #endif
 
 
+/* Define to the default mmacosx-version-min to use. */
+#ifndef USED_FOR_TARGET
+#undef DEFAULT_MACOSX_MINVERS
+#endif
+
+
 /* Define if you want to use __cxa_atexit, rather than atexit, to register C++
    destructors for local statics and global objects. This is essential for
    fully standards-compliant handling of destructors, but requires

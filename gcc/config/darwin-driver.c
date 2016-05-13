@@ -101,20 +101,23 @@ darwin_find_version_from_kernel (void)
 static const char *
 darwin_default_min_version (void)
 {
-  /* Try to retrieve the deployment target from the environment.  */
+  /* Try to retrieve the deployment target from the environment.
+     This */
   const char *new_flag = getenv ("MACOSX_DEPLOYMENT_TARGET");
 
   /* Apparently, an empty string for MACOSX_DEPLOYMENT_TARGET means
      "use the default".  Or, possibly "use 10.1".  We choose
      to ignore the environment variable, as if it was never set.  */
   if (new_flag == NULL || new_flag[0] == 0)
-#ifndef CROSS_DIRECTORY_STRUCTURE
-    /* Try to find the version from the kernel, if we fail - we print a
-       message and give up.  */
+#ifdef DEFAULT_MACOSX_MINVERS
+    new_flag = DEFAULT_MACOSX_MINVERS;
+#elif ! defined(CROSS_DIRECTORY_STRUCTURE)
+    /* Try to find the version for the system we're running onfrom the kernel,
+       if we fail - we print a message and give up.  */
     new_flag = darwin_find_version_from_kernel ();
 #else
-    /* For cross-compilers, default to a minimum version determined by
-       the configuration. */
+    /* For cross-compilers, we fall back to a default minimum version
+       determined by target configuration. */
     new_flag = DEF_MIN_OSX_VERSION;
 #endif /* CROSS_DIRECTORY_STRUCTURE */
 

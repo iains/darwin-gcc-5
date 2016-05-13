@@ -950,6 +950,21 @@ AC_ARG_WITH(multilib-list,
 :,
 with_multilib_list=default)
 
+AC_ARG_WITH(default-mmacosx-version-min,
+[AS_HELP_STRING([[--default-mmacosx-version-min=10.XX]],
+		[When no -mmacosx-version-min is specified, use 10.XX])],
+[
+ case ${with_default_mmacosx_version_min} in
+ yes) default_mmacosx_version_min=10.5 ;;
+ *) default_mmacosx_version_min=$with_default_mmacosx_version_min ;;
+ esac
+], [])
+
+if test x"$default_mmacosx_version_min" != x; then
+  AC_DEFINE_UNQUOTED(DEFAULT_MACOSX_MINVERS, "$default_mmacosx_version_min",
+  [Define to the default mmacosx-version-min to use.])
+fi
+
 # -------------------------
 # Checks for other programs
 # -------------------------
