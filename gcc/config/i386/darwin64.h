@@ -30,3 +30,8 @@ along with GCC; see the file COPYING3.  If not see
   { "darwin_arch", DARWIN_ARCH_SPEC },                          \
   { "darwin_crt2", "" },                                        \
   { "darwin_subarch", DARWIN_SUBARCH_SPEC },
+
+/* Default to 10.6 for x86_64 (although 64b is supported by 10.5 and in a
+   limited sense by 10.4; this makes more sense as a default).  */
+#undef DEF_MIN_OSX_VERSION
+#define DEF_MIN_OSX_VERSION "10.6"
