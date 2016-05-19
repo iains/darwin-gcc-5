@@ -6,7 +6,9 @@ This branch is the current release of my changes for Darwin from the GCC 5.3 bra
 
 It contains a number of back-ports for fixes on the GCC trunk and some changes/additions that would not be appropriate for application to the upstream GCC-5 branch.
 
-Release : gcc-darwin-5-3r1
+Release : gcc-darwin-5-3r2
+
+NOTE: configuration changes/improvements are being trialled here, but intended for submission to trunk at some stage.
 
 Changes
 =======
@@ -16,6 +18,27 @@ Allowed for a build of powerpc-apple-darwin10 (strictly ppc7400 is only supporte
 
 Back-ported the proposed fix for PR57438 to avoid empty function bodies;
 This was preventing optimised builds of some code that contained asserts resulting in function bodies containing only unreachable code.
+
+5.3r2
+
+ Fix up libatomic configury to save the CFLAGS properly (previously, they were being overwritten by other configuration macros).  This causes configure fails for 32b targets supporting an m64 multilib, where the 32b cpu is incorrectly presented in the configuration of the 64b multilib (and can't do 64b insns, obviously).
+  
+ Fixed a problem with gnu-objc headers that only shows up when using sysroots.
+ 
+ The LTO wrappers for ar, nm and ranlib are built and installed regardless of whether the target supports an LTO plugin.  This causes --version and --help to fail on those (since the liblto_plugin.so is not present).  Changed the code to skip looking for the pluign (and reporting it to the called tools) when there's no plugin built.
+ 
+ Most of the remaining changes here are related to building stand-alone toolchains (including their own set of 'binutils' and SDK) that make no assumption that there are headers installed in '/' or even that XCode is installed at all.
+ 
+ - Remove -apple- from some of the configuration triples to allow (for example) i686-none-darwin.  Useful, to be able to build co-installed toolchains with different properties.
+ 
+ - Re-work the configuration and target headers to better support building "<arch>-apple-darwin".  I.E. removed configuration dependency on NN in darwinNN (mostly by doing configury checks for linker features).
+ 
+ - Provide a --with-default-mmacosx-version-min configuration parameter, so that a toolchain may be configured to host on DarwinNN but will always default to targeting the defined version.  Unless this is used; the default target will == host, and thus change depending on where the toolchain is deployed.  This was fine when '/' is the "sysroot" and one is only targeting the same machine; however the trend is to move away from that and thus toolchains need to refer to a sysroot/SDK installed in a defined place/manner.
+
+ - Provide an example config fragment (bootstrap-d10.mk) that will cause the toolchain to be built to host on minimum OS X 10.6 (Darwin10), regardless of the build host.
+ 
+ - Default x86_64 to Darwin10;
+
 
 Differences from "upstream"
 ===========================
